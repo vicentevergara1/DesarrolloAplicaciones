@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         val app = application as NotixApplication
         setContent {
             NotixTheme {
-                NotixApp(app.authRepository, app.procedureRepository)
+                NotixApp(app.authRepository, app.procedureRepository, app.documentStore)
             }
         }
     }

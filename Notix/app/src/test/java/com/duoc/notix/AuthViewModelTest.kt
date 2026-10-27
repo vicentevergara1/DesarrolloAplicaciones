@@ -3,6 +3,8 @@ package com.duoc.notix
 import com.duoc.notix.domain.AuthRepository
 import com.duoc.notix.domain.AuthResult
 import com.duoc.notix.domain.User
+import com.duoc.notix.domain.Registration
+import com.duoc.notix.domain.AccountType
 import com.duoc.notix.ui.auth.AuthField
 import com.duoc.notix.ui.auth.AuthViewModel
 import kotlinx.coroutines.Dispatchers
@@ -24,17 +26,42 @@ class AuthViewModelTest {
     private var result: AuthResult = AuthResult.Success(User(1, "Demo", "demo@example.com"))
     private val repository = object : AuthRepository {
         override suspend fun login(email: String, password: String): AuthResult { calls++; return result }
-        override suspend fun register(name: String, email: String, password: String): AuthResult { calls++; return result }
+        override suspend fun register(registration: Registration): AuthResult { calls++; return result }
     }
     @Before fun setup() { Dispatchers.setMain(dispatcher) }
     @After fun cleanup() { Dispatchers.resetMain() }
+
+    @Test fun profilesDoNotMixTheirFields() = runTest(dispatcher) {
+        val model = AuthViewModel(repository)
+        model.switchMode()
+        model.fillExample()
+        model.editProfile("nombre", "Nombre Personal Demo")
+        model.chooseType(AccountType.COMPANY)
+        assertEquals("", model.state.value.values["rut"].orEmpty())
+        model.fillExample()
+        model.chooseType(AccountType.PERSON)
+        assertEquals("Nombre Personal Demo", model.state.value.values["nombre"])
+        assertEquals("", model.state.value.password)
+    }
+
+    @Test fun registrationRejectsOnlyWhitespaceWithoutCallingRepository() = runTest(dispatcher) {
+        val model = AuthViewModel(repository)
+        model.switchMode()
+        model.fillExample()
+        model.edit(AuthField.PASSWORD, "        ")
+        model.edit(AuthField.CONFIRMATION, "        ")
+        model.submit()
+        advanceUntilIdle()
+        assertEquals(0, calls)
+        assertNotNull(model.state.value.errors["password"])
+    }
 
     @Test fun invalidInputDoesNotCallRepository() = runTest(dispatcher) {
         val model = AuthViewModel(repository)
         model.submit()
         advanceUntilIdle()
         assertEquals(0, calls)
-        assertTrue(model.state.value.errors.hasErrors)
+        assertTrue(model.state.value.errors.isNotEmpty())
     }
 
     @Test fun loginBlocksDuplicateSubmissionsAndClearsCredentialsAfterSuccess() = runTest(dispatcher) {

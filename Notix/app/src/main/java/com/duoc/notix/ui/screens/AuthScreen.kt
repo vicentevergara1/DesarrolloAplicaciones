@@ -2,123 +2,118 @@ package com.duoc.notix.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import com.duoc.notix.R
-import com.duoc.notix.ui.auth.AuthField
-import com.duoc.notix.ui.auth.AuthMode
-import com.duoc.notix.ui.auth.AuthUiState
+import com.duoc.notix.domain.*
+import com.duoc.notix.ui.auth.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
     state: AuthUiState,
     onEdit: (AuthField, String) -> Unit,
+    onEditProfile: (String, String) -> Unit,
+    onType: (AccountType) -> Unit,
+    onExample: () -> Unit,
     onSubmit: () -> Unit,
-    onSwitchMode: () -> Unit,
+    onSwitch: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val registering = state.mode == AuthMode.REGISTER
-    var showPassword by remember(state.mode) { mutableStateOf(false) }
+    var visible by remember(state.mode, state.accountType) { mutableStateOf(false) }
     Column(
-        modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(24.dp),
+        modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Spacer(Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Image(painterResource(R.drawable.ic_notix), contentDescription = null, modifier = Modifier.size(56.dp))
-            Column {
-                Text("Notix", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                Text("Tus trámites, más claros", style = MaterialTheme.typography.bodyMedium)
-            }
+            if (registering) TextButton(onClick = onSwitch, enabled = !state.loading) { Text("‹ Volver") }
+            Image(painterResource(R.drawable.ic_notix), null, Modifier.size(48.dp))
+            Text("NotariaX", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }
-        Text("DEMOSTRACIÓN ACADÉMICA · NOTARIAX", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-        Spacer(Modifier.height(8.dp))
-        Text(if (registering) "Crea tu cuenta de prueba" else "Bienvenido de nuevo", style = MaterialTheme.typography.headlineSmall)
-        Text("Usa solo datos ficticios. La información se guarda en este dispositivo.", style = MaterialTheme.typography.bodyMedium)
+        Text(if (registering) "Crea tu cuenta" else "Ingresa a NotariaX",
+            style = MaterialTheme.typography.headlineLarge, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold)
+        Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
+            Text("Demostración académica. Usa exclusivamente nombres, identificadores, documentos y contraseñas ficticios.",
+                Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall)
+        }
         if (registering) {
-            AuthTextField("Nombre de prueba", state.name, state.errors.name, !state.loading,
-                onChange = { onEdit(AuthField.NAME, it) })
-        }
-        AuthTextField("Correo electrónico ficticio", state.email, state.errors.email, !state.loading,
-            keyboardType = KeyboardType.Email, onChange = { onEdit(AuthField.EMAIL, it) })
-        AuthTextField("Contraseña", state.password, state.errors.password, !state.loading,
-            keyboardType = KeyboardType.Password, password = !showPassword,
-            trailing = {
-                TextButton(onClick = { showPassword = !showPassword }, enabled = !state.loading) {
-                    Text(if (showPassword) "Ocultar" else "Mostrar")
+            Text("Tipo de cuenta de prueba", fontWeight = FontWeight.SemiBold)
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                AccountType.entries.forEachIndexed { index, type ->
+                    SegmentedButton(
+                        selected = state.accountType == type, onClick = { onType(type) }, enabled = !state.loading,
+                        shape = SegmentedButtonDefaults.itemShape(index, AccountType.entries.size),
+                    ) { Text(type.label) }
                 }
-            }, onChange = { onEdit(AuthField.PASSWORD, it) })
+            }
+            TextButton(onClick = onExample, enabled = !state.loading) { Text("Completar ejemplo ficticio") }
+            if (state.accountType == AccountType.NOTARY) {
+                Text("Este perfil representa una revisión simulada y no autoriza trámites reales.", style = MaterialTheme.typography.bodySmall)
+            }
+            RegistrationRules.fieldsFor(state.accountType).forEach { field ->
+                val keyboard = when (field.kind) {
+                    FieldKind.TEXT -> KeyboardType.Text
+                    FieldKind.EMAIL -> KeyboardType.Email
+                    FieldKind.NUMBER -> KeyboardType.Number
+                    FieldKind.PHONE -> KeyboardType.Phone
+                    FieldKind.ASCII -> KeyboardType.Ascii
+                }
+                FormField(field.title, state.values[field.key].orEmpty(), state.errors[field.key], !state.loading,
+                    keyboard = keyboard, placeholder = field.example,
+                    onChange = { onEditProfile(field.key, it) })
+            }
+        } else {
+            FormField("Correo electrónico ficticio", state.email, state.errors["correo"], !state.loading,
+                keyboard = KeyboardType.Email, onChange = { onEdit(AuthField.EMAIL, it) })
+        }
+        FormField("Contraseña", state.password, state.errors["password"], !state.loading,
+            keyboard = KeyboardType.Password, hide = !visible,
+            trailing = { TextButton(onClick = { visible = !visible }, enabled = !state.loading) { Text(if (visible) "Ocultar" else "Mostrar") } },
+            onChange = { onEdit(AuthField.PASSWORD, it) })
         if (registering) {
-            AuthTextField("Confirmar contraseña", state.confirmation, state.errors.confirmation, !state.loading,
-                keyboardType = KeyboardType.Password, password = !showPassword,
-                onChange = { onEdit(AuthField.CONFIRMATION, it) })
-            Text("La contraseña debe tener entre 8 y 128 caracteres.", style = MaterialTheme.typography.bodySmall)
+            FormField("Confirmar contraseña", state.confirmation, state.errors["confirmation"], !state.loading,
+                keyboard = KeyboardType.Password, hide = !visible, onChange = { onEdit(AuthField.CONFIRMATION, it) })
+            Text("Entre 8 y 128 caracteres. No uses una contraseña real.", style = MaterialTheme.typography.bodySmall)
         }
         AnimatedVisibility(state.message != null) {
             Text(state.message.orEmpty(), color = MaterialTheme.colorScheme.error)
         }
-        Button(onClick = onSubmit, enabled = !state.loading, modifier = Modifier.fillMaxWidth()) {
-            if (state.loading) {
-                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                Text("  Procesando…")
-            } else {
-                Text(if (registering) "Crear cuenta" else "Iniciar sesión")
-            }
+        Button(onClick = onSubmit, enabled = !state.loading, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+            if (state.loading) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            Text(if (state.loading) "  Procesando…" else if (registering) "Registrarse" else "Iniciar sesión")
         }
-        TextButton(onClick = onSwitchMode, enabled = !state.loading, modifier = Modifier.fillMaxWidth()) {
-            Text(if (registering) "Ya tengo una cuenta" else "Crear una cuenta de prueba")
+        TextButton(onClick = onSwitch, enabled = !state.loading, modifier = Modifier.fillMaxWidth()) {
+            Text(if (registering) "¿Ya tienes cuenta? Ingresar" else "Crear una cuenta de prueba")
         }
+        Spacer(Modifier.height(12.dp))
     }
 }
 
 @Composable
-private fun AuthTextField(
-    label: String,
-    value: String,
-    error: String?,
-    enabled: Boolean,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    password: Boolean = false,
-    trailing: (@Composable () -> Unit)? = null,
-    onChange: (String) -> Unit,
+private fun FormField(
+    title: String, value: String, error: String?, enabled: Boolean,
+    keyboard: KeyboardType = KeyboardType.Text, placeholder: String = "", hide: Boolean = false,
+    trailing: (@Composable () -> Unit)? = null, onChange: (String) -> Unit,
 ) {
     OutlinedTextField(
-        value = value, onValueChange = onChange,
-        label = { Text(label) }, modifier = Modifier.fillMaxWidth(),
-        enabled = enabled, singleLine = true, isError = error != null,
-        supportingText = if (error == null) null else { { Text(error) } },
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        visualTransformation = if (password) PasswordVisualTransformation() else VisualTransformation.None,
+        value = value, onValueChange = onChange, label = { Text(title) },
+        modifier = Modifier.fillMaxWidth(), enabled = enabled, singleLine = true,
+        placeholder = if (placeholder.isEmpty()) null else { { Text(placeholder) } },
+        isError = error != null, supportingText = if (error == null) null else { { Text(error) } },
+        visualTransformation = if (hide) PasswordVisualTransformation() else VisualTransformation.None,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboard),
         trailingIcon = trailing,
     )
 }

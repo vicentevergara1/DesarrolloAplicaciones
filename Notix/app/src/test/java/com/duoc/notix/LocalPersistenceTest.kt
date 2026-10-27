@@ -6,8 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.duoc.notix.data.LocalAuthRepository
 import com.duoc.notix.data.LocalProcedureRepository
 import com.duoc.notix.data.local.NotixDatabase
-import com.duoc.notix.domain.AuthResult
-import com.duoc.notix.domain.ProcedureType
+import com.duoc.notix.domain.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -23,43 +22,52 @@ import org.robolectric.annotation.Config
 class LocalPersistenceTest {
     private lateinit var database: NotixDatabase
     private val context: Context get() = ApplicationProvider.getApplicationContext()
-    private fun open() = Room.databaseBuilder(context, NotixDatabase::class.java, "persistence-test.db").build()
-    @Before fun setup() {
-        context.deleteDatabase("persistence-test.db")
-        database = open()
-    }
-    @After fun cleanup() {
-        database.close()
-        context.deleteDatabase("persistence-test.db")
-    }
+    private fun open() = Room.databaseBuilder(context, NotixDatabase::class.java, "persistence-test.db")
+        .addMigrations(NotixDatabase.MIGRATION_1_2).build()
+    @Before fun setup() { context.deleteDatabase("persistence-test.db"); database = open() }
+    @After fun cleanup() { database.close(); context.deleteDatabase("persistence-test.db") }
 
-    @Test fun accountAndDraftSurviveDatabaseReopeningAndRemainPrivateToUser() = runBlocking {
+    @Test fun accountsProfilesAndDraftsSurviveDatabaseReopening() = runBlocking {
         val auth = LocalAuthRepository(database.userDao())
-        val first = (auth.register("Demo Uno", "DEMO@example.com ", "prueba123") as AuthResult.Success).user
-        val second = (auth.register("Demo Dos", "otra@example.com", "prueba456") as AuthResult.Success).user
+        val first = (auth.register(registration("DEMO@example.com ")) as AuthResult.Success).user
+        val second = (auth.register(registration("otra@example.com")) as AuthResult.Success).user
         val stored = database.userDao().findByEmail("demo@example.com")!!
         assertEquals(32, stored.passwordHash.size)
         assertEquals(16, stored.passwordSalt.size)
         assertFalse(stored.passwordHash.contentEquals("prueba123".toByteArray()))
-        assertEquals(AuthResult.DuplicateEmail, auth.register("Otro Demo", "demo@EXAMPLE.com", "prueba999"))
+        assertTrue(stored.profileJson.contains("111"))
+        assertFalse(stored.profileJson.contains("prueba123"))
+        assertEquals(AuthResult.DuplicateEmail, auth.register(registration("demo@EXAMPLE.com")))
         assertEquals(AuthResult.InvalidCredentials, auth.login("demo@example.com", "incorrecta"))
-        LocalProcedureRepository(database.procedureDao()).createDraft(first.id, ProcedureType.DECLARATION)
+        LocalProcedureRepository(database).createDraft(first, ProcedureType.DECLARATION)
         database.close()
         database = open()
-        val reopenedAuth = LocalAuthRepository(database.userDao())
-        assertEquals(first, (reopenedAuth.login(" demo@EXAMPLE.COM ", "prueba123") as AuthResult.Success).user)
-        val drafts = LocalProcedureRepository(database.procedureDao())
-        assertEquals(1, drafts.observeForUser(first.id).first().size)
-        assertTrue(drafts.observeForUser(second.id).first().isEmpty())
+        val reopened = LocalAuthRepository(database.userDao())
+        assertEquals(first, (reopened.login(" demo@EXAMPLE.COM ", "prueba123") as AuthResult.Success).user)
+        val repository = LocalProcedureRepository(database)
+        val item = repository.observe(first).first().single()
+        assertEquals(1, item.documents.size)
+        assertEquals(1, item.history.size)
+        assertTrue(repository.observe(second).first().isEmpty())
     }
 
-    @Test fun samePasswordUsesDifferentSaltsForDifferentAccounts() = runBlocking {
+    @Test fun samePasswordUsesDifferentSaltsAndRoleIsPreserved() = runBlocking {
         val auth = LocalAuthRepository(database.userDao())
-        auth.register("Uno Demo", "uno@example.com", "prueba123")
-        auth.register("Dos Demo", "dos@example.com", "prueba123")
+        auth.register(registration("uno@example.com"))
+        auth.register(registration("notario@example.com", AccountType.NOTARY, "Notario Demo"))
         val one = database.userDao().findByEmail("uno@example.com")!!
-        val two = database.userDao().findByEmail("dos@example.com")!!
+        val two = database.userDao().findByEmail("notario@example.com")!!
         assertFalse(one.passwordSalt.contentEquals(two.passwordSalt))
         assertFalse(one.passwordHash.contentEquals(two.passwordHash))
+        assertEquals(AccountType.NOTARY, (auth.login("notario@example.com", "prueba123") as AuthResult.Success).user.type)
+    }
+
+    @Test fun invalidRegistrationCannotBypassTheViewModel() = runBlocking {
+        val auth = LocalAuthRepository(database.userDao())
+        try {
+            auth.register(registration(password = "        "))
+            fail("Debe rechazar la contraseña en blanco.")
+        } catch (_: DomainException) { }
+        assertNull(database.userDao().findByEmail("demo@example.com"))
     }
 }

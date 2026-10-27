@@ -1,68 +1,87 @@
-# Notix · NotariaX
+# NotariaX · Notix
 
-Aplicación Android académica para el caso NotariaX de DSY1105. Usa exclusivamente datos ficticios. El proyecto Android está en **`Notix/`**: abre esa carpeta en Android Studio.
+MVP Android académico para DSY1105. Registra perfiles ficticios, gestiona documentos y representa un ciclo completo de trámite notarial. Usa Kotlin, Jetpack Compose, MVVM y Room. **No realiza trámites reales ni conecta proveedores de firma.**
 
-## Funcionalidad implementada
+## Abrir y ejecutar en Android Studio
 
-- Registro con validaciones por campo: nombre, correo, contraseña y confirmación.
-- Inicio y cierre de sesión locales. Se rechazan correos duplicados, ignorando mayúsculas y espacios exteriores.
-- Cuentas persistidas en Room. Las contraseñas se derivan con PBKDF2, 210.000 iteraciones y una sal aleatoria por cuenta; nunca se guardan en texto plano.
-- Listado de borradores de cada usuario, selección de tres formatos ficticios y creación de borradores en Room.
-- Interfaz en español, paleta azul/dorado, ilustración vectorial, mensajes animados y diálogos para crear borradores y cerrar sesión.
-- Estados de carga y errores, prevención de envíos repetidos y soporte de tema oscuro.
+1. Descarga y extrae el ZIP. Abre **la carpeta Notix/**, donde están settings.gradle.kts y gradlew.bat.
+2. Configura **JDK 21 completo** como Gradle JDK en Settings → Build Tools → Gradle.
+3. Instala **Android SDK Platform 37.0**, **Build Tools 36.0.0** y Platform Tools en SDK Manager. Usa Android Studio compatible con **AGP 9.2.1**.
+4. Sincroniza Gradle y ejecuta **app** en un teléfono o emulador **API 24 o superior**.
+5. La primera compilación descarga dependencias; la aplicación funciona después sin conexión a internet.
 
-Las cuentas y los borradores sobreviven al cierre del proceso. Al volver a abrir la aplicación se solicita iniciar sesión; las contraseñas y la sesión activa no se guardan en preferencias. Los datos se mantienen solo en el dispositivo y se eliminan al borrar los datos de la aplicación o desinstalarla. No se requiere internet para usarla.
+Desde terminal:
 
-## Requisitos y ejecución
-
-1. Android Studio compatible con Android Gradle Plugin **9.2.1**.
-2. **JDK 21 completo**, configurado como Gradle JDK.
-3. Android SDK Platform **37.0** y Build Tools **36.0.0**. Android Studio puede instalar los componentes del SDK al sincronizar.
-4. Emulador o teléfono con **Android 7.0 / API 24 o superior**.
-5. Abrir `Notix/`, sincronizar Gradle y ejecutar la configuración `app`.
-
-Para compilar desde terminal, configura `JAVA_HOME` y `ANDROID_HOME` con tus rutas locales o usa `Notix/local.properties` para `sdk.dir`. No subas ese archivo a Git.
-
-```sh
+~~~sh
 cd Notix
 ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
-```
+~~~
 
-En Windows usa `gradlew.bat`. El APK de depuración queda en `Notix/app/build/outputs/apk/debug/app-debug.apk`.
+En Windows usa gradlew.bat. Configura JAVA_HOME y ANDROID_HOME, o sdk.dir en Notix/local.properties. No subas rutas locales, llaves ni credenciales. El APK queda en **Notix/app/build/outputs/apk/debug/app-debug.apk**.
 
-Las versiones están fijadas en `gradle/libs.versions.toml` y el wrapper de Gradle 9.4.1 verifica el SHA-256 oficial de su distribución. La primera compilación necesita descargar dependencias desde los repositorios oficiales.
+## Probar rápidamente
 
-## Arquitectura MVVM
+En **Crear una cuenta de prueba**, elige un perfil y pulsa **Completar ejemplo ficticio**. Se completan datos sintéticos válidos, incluido el dígito verificador del RUT.
 
-```text
-ui/screens/       Vistas Compose: muestran estado y emiten eventos.
-ui/auth/          AuthViewModel: validación, registro, acceso y sesión en memoria.
-ui/procedures/    ProceduresViewModel: carga y creación de borradores.
-domain/           Modelos, validaciones e interfaces de repositorios.
-data/             Implementaciones locales y derivación de contraseñas.
-data/local/       Entidades, DAOs y base de datos Room.
-```
+| Perfil | Correo de ejemplo | Contraseña de demostración |
+|---|---|---|
+| Persona | persona.demo@example.com | Demo2026! |
+| Empresa | empresa.demo@example.com | Demo2026! |
+| Notario | notario.demo@example.com | Demo2026! |
 
-`NotixApplication` crea una sola base de datos y conecta los repositorios con los ViewModels mediante sus fábricas. Las pantallas no consultan los DAOs. Las operaciones de acceso y derivación de contraseñas se ejecutan fuera del hilo principal. Room expone los borradores como `Flow`; la UI observa los estados respetando su ciclo de vida. El esquema de Room se conserva en `Notix/app/schemas/` para futuras migraciones.
+Estas cuentas se crean al registrarlas; no están preinstaladas. Si un correo ya existe, usa **Ingresar**. Nunca emplees datos o contraseñas reales. Persona y Empresa tienen su propio listado; Notario ve los trámites enviados por los solicitantes.
 
-## Demostración manual
+## Flujo implementado
 
-1. Selecciona **Crear una cuenta de prueba**.
-2. Envía campos vacíos: deben mostrarse errores. Prueba también un correo incompleto, una contraseña corta y una confirmación diferente.
-3. Registra `Persona Demo`, `demo@example.com` y una contraseña ficticia de al menos ocho caracteres. No uses contraseñas reales.
-4. Comprueba la pantalla **Mis trámites**, inicialmente vacía.
-5. Selecciona **Nuevo trámite de prueba**, elige un formato y guarda el borrador.
-6. Cierra sesión, ingresa con una contraseña incorrecta y comprueba el mensaje de error. Después ingresa con la correcta: el borrador debe seguir ahí.
-7. Cierra y vuelve a abrir la aplicación; inicia sesión y verifica la persistencia.
-8. Intenta registrar `DEMO@example.com`: debe rechazarse como duplicado.
-9. Registra una segunda cuenta con otro correo: su listado debe estar vacío.
+1. Registra Persona o Empresa y crea un trámite a partir de uno de tres formatos ficticios.
+2. Completa antecedentes, consulta el documento de ejemplo y opcionalmente adjunta otros archivos.
+3. Elige una representación de firma y confírmala. Envía el trámite mediante el modal de confirmación.
+4. Cierra sesión e ingresa con un perfil Notario de prueba.
+5. Revisa antecedentes y documentos. Devuelve con observaciones o finaliza la simulación.
+6. Si hay observaciones, vuelve como solicitante, corrige y reenvía.
+7. Finaliza como Notario y consulta el estado y el historial desde ambos perfiles.
 
-## Pruebas automatizadas
+Estados: **Borrador → En revisión → Con observaciones → En revisión → Finalizado**. También puede finalizarse directamente un trámite en revisión.
 
-`testDebugUnitTest` incluye validación y estados de autenticación, integración de Room con reapertura de la base y aislamiento por usuario, y el recorrido de interfaz registro → creación de borrador → cierre → acceso. Las pruebas Android locales usan Robolectric y no necesitan un emulador. Su primera ejecución descarga el entorno de pruebas.
+El repositorio verifica rol, propiedad del trámite, requisitos de envío y transiciones. Los cambios de estado y sus eventos se guardan en una misma transacción. Los documentos e historial se actualizan mediante Flow.
 
-## Pendiente para completar el caso
+## Documentos y recurso nativo
 
-Esta entrega desarrolla el acceso y los borradores. Quedan pendientes la carga y lectura de documentos mediante un recurso nativo, la representación de firma, los perfiles de notario, envío, observaciones, corrección, finalización e historial de estados. También deben prepararse el mockup y tablero Trello, el video y las evidencias de colaboración del equipo.
+**Adjuntar archivo ficticio** abre el selector nativo de Android mediante OpenDocument. Acepta PDF, TXT, PNG y JPG, hasta **5 MB por archivo** y **cinco documentos por trámite**, contando el formato incluido.
 
-El contexto del caso está en [docs/contexto.md](docs/contexto.md). Los borradores actuales no representan trámites notariales válidos ni incorporan todavía el flujo completo del caso.
+La aplicación copia el archivo elegido a su almacenamiento privado con un nombre interno aleatorio y conserva su referencia en Room. No modifica el original ni solicita permisos generales de almacenamiento. FileProvider permite abrir la copia en un visor instalado con permiso temporal de lectura. Si no existe un visor compatible, se muestra un aviso y el trámite se conserva.
+
+Copia [docs/documento-ficticio.txt](docs/documento-ficticio.txt) al dispositivo para probarlo. Los formatos incluidos se consultan en un modal sin instalar un visor. Los archivos vacíos, los tipos no admitidos y los archivos que superan el límite se rechazan.
+
+## Requisitos cubiertos en código
+
+- Formulario y validaciones para tres perfiles; rechazo de contraseñas en blanco y correos duplicados.
+- MVVM: pantallas, ViewModels, reglas de dominio, repositorios y DAOs separados.
+- Room: usuarios, perfiles, trámites, documentos y eventos.
+- Navegación entre acceso, registro, listado y detalle; confirmación al descartar ediciones.
+- Imagen vectorial propia visible en la interfaz.
+- Animaciones de estados, mensajes e historial.
+- Modales de documentos, creación, envío, observaciones, finalización y cierre de sesión.
+- Recurso nativo: selector de archivos y apertura mediante aplicaciones del dispositivo.
+- Paleta verde del diseño de registro, tema oscuro y textos en español.
+
+## Persistencia y migración
+
+Las contraseñas se derivan con PBKDF2 y sal aleatoria por cuenta; nunca se guardan como texto. El perfil no contiene la contraseña. La sesión activa permanece en memoria y se solicita acceso al volver a abrir el proceso. Cuentas, documentos y eventos sobreviven al cierre de la aplicación.
+
+La base **versión 2** migra desde la versión 1 del proyecto anterior. Conserva cuentas y borradores, asigna Persona a las cuentas antiguas y agrega un evento inicial a sus historiales. Los borradores anteriores sin documentos pueden completarse adjuntando un archivo ficticio. No se usa borrado destructivo.
+
+Los respaldos están deshabilitados y la configuración de extracción excluye archivos y base de datos. Borrar los datos de la aplicación o desinstalarla elimina la información local.
+
+## Documentación y pruebas
+
+- [Arquitectura y guía de defensa](docs/arquitectura.md).
+- [Casos de prueba y guion para el video](docs/pruebas.md).
+- [Contexto del caso](docs/contexto.md).
+- [Resultados de validación](docs/validacion.md).
+
+Las pruebas locales usan Robolectric y no requieren emulador. Cubren reglas, ViewModels, cuentas, aislamiento, transiciones, historial, migración, archivos y un recorrido de interfaz con solicitante y notario. Las capturas quedan en **Notix/app/build/reports/ui/**.
+
+## Evidencias del equipo
+
+El equipo debe mantener su historial de commits, mockup y tarjetas de Trello, grabar el video y practicar la defensa. Estos entregables requieren su trabajo y no se sustituyen con el código del ZIP. La integración con firmas, e-token, certificados y autorización notarial es exclusivamente simulada.
