@@ -11,6 +11,22 @@ class RegistrationRulesTest {
                 RegistrationRules.DEMO_PASSWORD, RegistrationRules.DEMO_PASSWORD).isEmpty())
         }
     }
+    @Test fun numericZeroAndKDigitsDependOnTheBody() {
+        listOf("11.111.111-1", "22.222.222-2", "22.312.422-4", "10.000.004-0", "12.345.670-K", "12.345.670-k").forEach {
+            assertTrue(it, RegistrationRules.validRut(it))
+        }
+        assertFalse(RegistrationRules.validRut("22.312.422-1"))
+        assertFalse(RegistrationRules.validRut("22.312.422-K"))
+        assertFalse(RegistrationRules.validRut("11.111.111-K"))
+    }
+
+    @Test fun incorrectVerifierExplainsTheExpectedDigit() {
+        val expected = "Para este identificador ficticio, el dígito verificador esperado es 4."
+        assertEquals(expected, RegistrationRules.rutError("22.312.422-1"))
+        assertEquals(expected, RegistrationRules.rutError("22.312.422-K"))
+        assertNull(RegistrationRules.rutError("22.312.422-4"))
+    }
+
     @Test fun blankPasswordsAreRejectedEvenWhenLongEnough() {
         for (password in listOf("      ", "        ", " ".repeat(20))) {
             assertTrue(RegistrationRules.validate(AccountType.PERSON, RegistrationRules.example(AccountType.PERSON),

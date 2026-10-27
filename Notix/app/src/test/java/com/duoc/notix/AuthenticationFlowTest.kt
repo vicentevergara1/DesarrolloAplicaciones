@@ -138,6 +138,22 @@ class AuthenticationFlowTest {
         ui.onNodeWithText("Borrador").performScrollTo().assertIsDisplayed()
     }
 
+    @Test fun notaryRutErrorPersistsForKAndNumericFourAllowsRegistration() {
+        click("Crear una cuenta de prueba")
+        click("Notario")
+        click("Completar ejemplo ficticio")
+        ui.onNodeWithText("RUN del notario ficticio").performScrollTo().performTextReplacement("22.312.422-1")
+        click("Registrarse")
+        val expected = "Para este identificador ficticio, el dígito verificador esperado es 4."
+        ui.onNodeWithText(expected).performScrollTo().assertIsDisplayed()
+        ui.onNodeWithText("RUN del notario ficticio").performScrollTo().performTextReplacement("22.312.422-K")
+        ui.onNodeWithText(expected).performScrollTo().assertIsDisplayed()
+        ui.onNodeWithText("RUN del notario ficticio").performScrollTo().performTextReplacement("22.312.422-4")
+        ui.onNodeWithText(expected).assertDoesNotExist()
+        click("Registrarse")
+        await("Bandeja del notario")
+    }
+
     @Test fun companyRegistrationNavigatesAndBlankPasswordStaysOnForm() {
         click("Crear una cuenta de prueba")
         click("Empresa")

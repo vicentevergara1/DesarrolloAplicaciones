@@ -7,6 +7,7 @@ Usa únicamente ejemplos ficticios y un dispositivo API 24 o superior. Prepara P
 | Campos vacíos | Registra sin completar datos | Errores por campo |
 | Contraseña en blanco | Usa ocho espacios en ambos campos | Rechazo explícito |
 | Tres perfiles | Cambia tipo y completa el ejemplo | Campos independientes y ejemplos válidos |
+| RUN numérico | Prueba 22.312.422-1; cambia a K y luego a 4 | Mantiene el error para 1 y K; con 4 permite continuar |
 | RUT de empresa | Prueba 76.111.111-K y 76.111.111-6 | Rechaza el primero; acepta el segundo |
 | Correo duplicado | Repite correo variando mayúsculas | Solicita iniciar sesión |
 | Acceso incorrecto | Usa otra contraseña | Mensaje de error |

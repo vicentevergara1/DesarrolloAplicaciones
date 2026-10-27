@@ -31,6 +31,8 @@ En **Crear una cuenta de prueba**, elige un perfil y pulsa **Completar ejemplo f
 
 Estas cuentas se crean al registrarlas; no están preinstaladas. Si un correo ya existe, usa **Ingresar**. Nunca emplees datos o contraseñas reales. Persona y Empresa tienen su propio listado; Notario ve los trámites enviados por los solicitantes.
 
+Los RUT/RUN de prueba se validan con módulo 11: el dígito puede ser un número de 0 a 9 o K, según el cuerpo del identificador. Por ejemplo, **22.312.422-4** pasa el cálculo y **22.312.422-K** no. Esto no verifica una identidad real. Después de intentar registrarse, los errores se actualizan al editar y muestran el dígito esperado.
+
 ## Flujo implementado
 
 1. Registra Persona o Empresa y crea un trámite a partir de uno de tres formatos ficticios.

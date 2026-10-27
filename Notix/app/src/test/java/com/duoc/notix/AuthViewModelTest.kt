@@ -31,6 +31,29 @@ class AuthViewModelTest {
     @Before fun setup() { Dispatchers.setMain(dispatcher) }
     @After fun cleanup() { Dispatchers.resetMain() }
 
+    @Test fun changingAnInvalidRutToKDoesNotHideTheError() = runTest(dispatcher) {
+        val model = AuthViewModel(repository)
+        model.switchMode()
+        model.chooseType(AccountType.NOTARY)
+        model.fillExample()
+        model.editProfile("run", "22.312.422-1")
+        model.submit()
+        advanceUntilIdle()
+        assertNotNull(model.state.value.errors["run"])
+        assertEquals(0, calls)
+        model.editProfile("run", "22.312.422-K")
+        assertNotNull(model.state.value.errors["run"])
+        model.submit()
+        advanceUntilIdle()
+        assertEquals(0, calls)
+        model.editProfile("run", "22.312.422-4")
+        assertNull(model.state.value.errors["run"])
+        model.submit()
+        advanceUntilIdle()
+        assertEquals(1, calls)
+        assertNotNull(model.state.value.user)
+    }
+
     @Test fun profilesDoNotMixTheirFields() = runTest(dispatcher) {
         val model = AuthViewModel(repository)
         model.switchMode()

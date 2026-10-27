@@ -61,23 +61,35 @@ object RegistrationRules {
 
     private fun digits(value: String) = value.filter { it in '0'..'9' }
 
-    fun validRut(value: String): Boolean {
-        val clean = value.filter { it in '0'..'9' || it == 'k' || it == 'K' }.uppercase()
-        if (clean.length !in 8..9 || !clean.dropLast(1).all { it in '0'..'9' }) return false
-        val sum = clean.dropLast(1).reversed().mapIndexed { index, char ->
+    private fun expectedRutDigit(body: String): Char? {
+        if (body.length !in 7..8 || !body.all { it in '0'..'9' }) return null
+        val sum = body.reversed().mapIndexed { index, char ->
             (char - '0') * (index % 6 + 2)
         }.sum()
-        val result = 11 - sum % 11
-        val expected = when (result) { 11 -> '0'; 10 -> 'K'; else -> '0' + result }
-        return expected == clean.last()
+        return when (val result = 11 - sum % 11) {
+            11 -> '0'
+            10 -> 'K'
+            else -> '0' + result
+        }
     }
+
+    fun rutError(value: String): String? {
+        val clean = value.filterNot { it == '.' || it == '-' || it.isWhitespace() }.uppercase()
+        if (clean.length !in 8..9) return "Ingresa el identificador ficticio completo, con su dígito verificador."
+        val expected = expectedRutDigit(clean.dropLast(1))
+            ?: return "El cuerpo del identificador ficticio debe contener solo números."
+        return if (clean.last() == expected) null
+        else "Para este identificador ficticio, el dígito verificador esperado es " + expected + "."
+    }
+
+    fun validRut(value: String): Boolean = rutError(value) == null
 
     fun validate(type: AccountType, values: Map<String, String>, password: String, confirmation: String): Map<String, String> =
         buildMap {
             fieldsFor(type).forEach { field ->
                 val value = values[field.key].orEmpty()
                 val error = when (field.key) {
-                    "rut", "run", "rep_run" -> if (!validRut(value)) "Revisa el identificador ficticio y su dígito verificador." else null
+                    "rut", "run", "rep_run" -> rutError(value)
                     "doc", "rep_doc" -> if (digits(value).length != 9) "Ingresa los 9 dígitos del documento ficticio." else null
                     "telefono" -> if (digits(value).length != 9) "Ingresa 9 dígitos de prueba." else null
                     "notaria_n" -> if ((value.toIntOrNull() ?: 0) !in 1..999) "Usa un número de 1 a 999." else null

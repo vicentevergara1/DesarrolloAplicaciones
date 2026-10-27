@@ -13,7 +13,7 @@ Desde Notix/:
 ## Resultados
 
 - **BUILD SUCCESSFUL**: APK de depuración generado.
-- **37 pruebas ejecutadas, 37 correctas, 0 omitidas y 0 errores.**
+- **41 pruebas ejecutadas, 41 correctas, 0 omitidas y 0 errores.**
 - Lint sin errores. Quedan tres advertencias: target SDK 36 frente al más reciente y versiones más nuevas de Compose Compiler y coroutines-test. Las versiones usadas están fijadas y compiladas.
 - Las pruebas de interfaz, SQLite y archivos se ejecutaron con Robolectric/API 28. No se ejecutó en un teléfono físico.
 
@@ -21,14 +21,16 @@ Desde Notix/:
 |---|---:|---:|
 | AndroidDocumentStoreTest | 3 | 0 |
 | AuthValidationTest | 5 | 0 |
-| AuthViewModelTest | 5 | 0 |
-| AuthenticationFlowTest | 3 | 0 |
+| AuthViewModelTest | 6 | 0 |
+| AuthenticationFlowTest | 4 | 0 |
 | DatabaseMigrationTest | 1 | 0 |
 | LocalPersistenceTest | 3 | 0 |
 | ProcedureWorkflowTest | 4 | 0 |
 | ProceduresViewModelTest | 6 | 0 |
-| RegistrationRulesTest | 6 | 0 |
+| RegistrationRulesTest | 8 | 0 |
 | StartupTest | 1 | 0 |
+
+La revisión del RUT/RUN incluye el ejemplo 22.312.422: se rechazan los verificadores 1 y K y se acepta 4. Se comprueban además verificadores numéricos, 0, K y k minúscula. Después de un intento fallido, el campo conserva el error al editar si el dato sigue siendo incorrecto y muestra el dígito esperado.
 
 ## Funciones verificadas
 

@@ -19,6 +19,7 @@ data class AuthUiState(
     val password: String = "",
     val confirmation: String = "",
     val errors: Map<String, String> = emptyMap(),
+    val validationAttempted: Boolean = false,
     val message: String? = null,
     val loading: Boolean = false,
     val user: User? = null,
@@ -37,7 +38,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
 
     fun chooseType(type: AccountType) {
         if (state.value.loading || state.value.accountType == type) return
-        mutableState.update { it.copy(accountType = type, password = "", confirmation = "", errors = emptyMap(), message = null) }
+        mutableState.update { it.copy(accountType = type, password = "", confirmation = "", errors = emptyMap(), validationAttempted = false, message = null) }
     }
 
     fun fillExample() {
@@ -45,7 +46,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         mutableState.update {
             it.copy(profiles = it.profiles + (it.accountType to RegistrationRules.example(it.accountType)),
                 password = RegistrationRules.DEMO_PASSWORD, confirmation = RegistrationRules.DEMO_PASSWORD,
-                errors = emptyMap(), message = null)
+                errors = emptyMap(), validationAttempted = false, message = null)
         }
     }
 
@@ -53,7 +54,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         if (state.value.loading) return
         mutableState.update {
             val profile = it.values + (key to RegistrationRules.format(key, value))
-            it.copy(profiles = it.profiles + (it.accountType to profile), errors = it.errors - key, message = null)
+            revalidate(it.copy(profiles = it.profiles + (it.accountType to profile)), setOf(key))
         }
     }
 
@@ -61,23 +62,33 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         when (field) {
             AuthField.EMAIL -> editProfile("correo", value)
             else -> if (!state.value.loading) mutableState.update {
-                if (field == AuthField.PASSWORD) it.copy(password = value, errors = it.errors - "password", message = null)
-                else it.copy(confirmation = value, errors = it.errors - "confirmation", message = null)
+                val edited = if (field == AuthField.PASSWORD) it.copy(password = value) else it.copy(confirmation = value)
+                revalidate(edited, setOf("password", "confirmation"))
             }
         }
+    }
+
+    private fun errorsFor(input: AuthUiState): Map<String, String> =
+        if (input.mode == AuthMode.REGISTER)
+            RegistrationRules.validate(input.accountType, input.values, input.password, input.confirmation)
+        else AuthValidation.loginErrors(input.email, input.password)
+
+    /** Tras un intento, un cambio de texto no equivale a que el campo ya sea válido. */
+    private fun revalidate(input: AuthUiState, changedKeys: Set<String>): AuthUiState {
+        val localErrors = if (input.validationAttempted) errorsFor(input).filterKeys { it in changedKeys } else emptyMap()
+        return input.copy(errors = (input.errors - changedKeys) + localErrors, message = null)
     }
 
     fun submit() {
         val input = state.value
         if (input.loading || input.user != null) return
         val registering = input.mode == AuthMode.REGISTER
-        val errors = if (registering) RegistrationRules.validate(input.accountType, input.values, input.password, input.confirmation)
-        else AuthValidation.loginErrors(input.email, input.password)
+        val errors = errorsFor(input)
         if (errors.isNotEmpty()) {
-            mutableState.update { it.copy(errors = errors, message = "Revisa los campos marcados.") }
+            mutableState.update { it.copy(errors = errors, validationAttempted = true, message = "Revisa los campos marcados.") }
             return
         }
-        mutableState.update { it.copy(loading = true, message = null, errors = emptyMap()) }
+        mutableState.update { it.copy(loading = true, validationAttempted = true, message = null, errors = emptyMap()) }
         viewModelScope.launch {
             try {
                 val result = if (registering) repository.register(Registration(input.accountType, input.values, input.password))
