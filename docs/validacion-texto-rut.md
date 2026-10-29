@@ -1,3 +1,5 @@
+> Informe de la revisión de texto y RUT. Para la casilla y la persistencia de sesión, consultar [validacion-recordar-sesion.md](validacion-recordar-sesion.md).
+
 # Revisión de texto, RUT y comentarios — 29/10/2026
 
 ## Base y alcance

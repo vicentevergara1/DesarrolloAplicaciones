@@ -49,7 +49,7 @@ Las copias nuevas reemplazadas o abandonadas se eliminan; los archivos originale
 
 ## Sesión y navegación
 
-`SesionViewModel` conserva la cuenta y los ViewModels de sus pantallas durante cambios de configuración. Cerrar sesión destruye ese estado y los formularios de la cuenta. La sesión no se escribe en Room ni se restaura tras finalizar el proceso.
+`SesionViewModel` conserva la cuenta y los ViewModels de sus pantallas durante cambios de configuración. Cerrar sesión destruye ese estado y los formularios de la cuenta. La casilla **Recordar sesión** determina si se conserva el acceso al cerrar el proceso. `SesionRepository` guarda solo el ID en preferencias privadas, excluidas de backup. Al iniciar se consulta Room para recuperar el perfil actual y abrir la pantalla adecuada; si la cuenta no existe se elimina el ID guardado. No se persiste la contraseña. Un acceso incorrecto no guarda la sesión. Al cerrar sesión se borra la preferencia antes de liberar el estado y volver al login.
 
 El catálogo guarda el identificador de formato para reconstruirlo al rotar. Cada solicitud usa una clave de ViewModel distinta, por lo que un envío exitoso no impide crear otro trámite del mismo formato. Perfil permite cerrar sesión tanto a Persona como a Empresa; Notario tiene su acción en la barra superior.
 

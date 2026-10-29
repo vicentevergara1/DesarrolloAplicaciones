@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
                 var errorInicio by remember { mutableStateOf<String?>(null) }
                 var intentoInicio by remember { mutableStateOf(0) }
                 LaunchedEffect(intentoInicio) {
-                    try { DatabaseSeeder.seedIfEmpty(applicationContext); inicializada = true; errorInicio = null }
+                    try { DatabaseSeeder.seedIfEmpty(applicationContext); sesion.restaurar(); inicializada = true; errorInicio = null }
                     catch (e: kotlinx.coroutines.CancellationException) { throw e }
                     catch (_: Exception) { errorInicio = "No se pudieron cargar los datos locales." }
                 }
@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 var pantallaActual by rememberSaveable { mutableStateOf(Pantalla.Welcome) }
-                var usuarioId by sesion::usuarioId
+                val usuarioId = sesion.usuarioId
                 var formatoId by rememberSaveable { mutableStateOf<String?>(null) }
                 val formatoSeleccionado = catalogoFormatos.find { it.id == formatoId }
                 var tramiteCorreccionId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -83,10 +83,32 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val cerrarSesion = {
-                    sesion.cerrar()
-                    formatoId = null
-                    tramiteCorreccionId = null
-                    pantallaActual = Pantalla.Login
+                    sesion.cerrar {
+                        formatoId = null
+                        tramiteCorreccionId = null
+                        pantallaActual = Pantalla.Login
+                    }
+                }
+                sesion.error?.let { mensaje ->
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = sesion::limpiarError,
+                        title = { androidx.compose.material3.Text("Cerrar sesión") },
+                        text = { androidx.compose.material3.Text(mensaje) },
+                        confirmButton = {
+                            androidx.compose.material3.TextButton(onClick = sesion::limpiarError) {
+                                androidx.compose.material3.Text("Aceptar")
+                            }
+                        }
+                    )
+                }
+                if (sesion.redirigirAlInicio) {
+                    LaunchedEffect(Unit) {
+                        pantallaActual = if (sesion.tipoCuenta == TipoCuenta.NOTARIO) Pantalla.BandejaNotario else Pantalla.MisTramites
+                        formatoId = null
+                        tramiteCorreccionId = null
+                        sesion.confirmarRestauracion()
+                    }
+                    return@NotixTheme
                 }
                 if (usuarioId.isEmpty() && pantallaActual !in listOf(Pantalla.Welcome, Pantalla.Login, Pantalla.CrearCuenta)) {
                     LaunchedEffect(Unit) { pantallaActual = Pantalla.Welcome }
@@ -110,7 +132,7 @@ class MainActivity : ComponentActivity() {
                     )
                     Pantalla.Login -> LoginScreen(
                         onLoginSuccess = { usuario ->
-                            usuarioId = usuario.id
+                            sesion.abrir(usuario)
                             if (usuario.tipoCuenta == TipoCuenta.NOTARIO) {
                                 pantallaActual = Pantalla.BandejaNotario
                             } else {
@@ -123,7 +145,7 @@ class MainActivity : ComponentActivity() {
                         onVolver = { pantallaActual = Pantalla.Welcome },
                         onIngresar = { pantallaActual = Pantalla.Login },
                         onRegistrado = { usuario ->
-                            usuarioId = usuario.id
+                            sesion.abrir(usuario)
                             if (usuario.tipoCuenta == TipoCuenta.NOTARIO) {
                                 pantallaActual = Pantalla.BandejaNotario
                             } else {

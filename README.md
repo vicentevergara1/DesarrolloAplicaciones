@@ -40,7 +40,8 @@ Para Empresa, registrar una cuenta ficticia. El RUT ficticio se valida solo por 
 - Bandeja del notario: devolver con un motivo obligatorio o aprobar tras confirmar la legibilidad. Los trámites devueltos y finalizados no pueden evaluarse de nuevo sin reenvío.
 - Corrección y reenvío del mismo trámite por su solicitante, conservando historial y generando avisos.
 - Estado, historial y aviso se guardan en una transacción. Los IDs evitan colisiones y los reenvíos no duplican documentos.
-- Perfil y cierre de sesión para Persona/Empresa; navegación atrás y selección de formato conservada al rotar. La sesión queda en memoria y se elimina al cerrar el proceso.
+- Casilla **Recordar sesión** debajo del correo y la contraseña. Al marcarla e ingresar correctamente, la app abre directamente la cuenta al volver a iniciarse. Sin marcarla, solicita acceso nuevamente al reiniciar. Cerrar sesión elimina el acceso recordado. Se guarda solo el identificador, sin contraseña, y el perfil se consulta en Room.
+- Perfil y cierre de sesión para Persona/Empresa; navegación atrás y selección de formato conservada al rotar.
 - El texto se guarda en Room y aparece completo en el resumen, el detalle del solicitante y la revisión del notario. Puede editarse al corregir un trámite devuelto.
 - Migraciones Room **2 → 3 → 4** sin borrado de datos. Las solicitudes anteriores conservan sus datos y muestran un aviso si no tenían texto; al corregirlas se debe escribir la solicitud. Los adjuntos antiguos que solo contenían metadatos pueden quitarse y enviar solo texto.
 - Se quitaron los comentarios del código Android, pruebas, configuración, scripts y prototipo HTML/CSS. Se conserva la directiva ejecutable `#!/bin/sh` y los avisos de licencia de Gradle están en `docs/gradle-wrapper-notice.txt`.
@@ -48,7 +49,7 @@ Para Empresa, registrar una cuenta ficticia. El RUT ficticio se valida solo por 
 ## Documentación
 
 - [Guía técnica actualizada](docs/Documentacion_Notix.md)
-- [Verificación y pruebas manuales actuales](docs/validacion-texto-rut.md)
+- [Verificación y pruebas manuales actuales](docs/validacion-recordar-sesion.md)
 - [Contexto del caso](docs/contexto.md)
 - [Plan original de implementación](docs/Guia_implementacion_Notix.md), documento histórico
 

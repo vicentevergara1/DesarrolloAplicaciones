@@ -24,7 +24,7 @@ fun PerfilScreen(usuarioId: String, onVolver: () -> Unit, onCerrarSesion: () -> 
                 Text("Perfil: ${u.tipoCuenta.etiqueta}")
                 Text("Comuna: ${u.comuna}")
             }
-            Text("Simulación académica con datos ficticios. La sesión se cierra al reiniciar la aplicación.")
+            Text("Simulación académica con datos ficticios. Si marcas «Recordar sesión» al ingresar, mantendrás el acceso en este dispositivo hasta cerrar sesión.")
             Button(onClick = { confirmar = true }) { Text("Cerrar sesión") }
         }
     }

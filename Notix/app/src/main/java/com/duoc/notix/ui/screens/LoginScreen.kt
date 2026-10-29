@@ -1,6 +1,9 @@
 package com.duoc.notix.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.Checkbox
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -146,6 +149,19 @@ fun LoginScreen(
                     }
                 },
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth().testTag("recordar_sesion").toggleable(
+                    value = vm.recordar,
+                    enabled = !vm.cargando,
+                    role = Role.Checkbox,
+                    onValueChange = vm::onRecordarChange
+                ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(checked = vm.recordar, onCheckedChange = null, enabled = !vm.cargando)
+                Text("Recordar sesión", color = NotixColors.Tinta, fontSize = 14.sp)
+            }
 
             Button(
                 onClick = ::ingresar,

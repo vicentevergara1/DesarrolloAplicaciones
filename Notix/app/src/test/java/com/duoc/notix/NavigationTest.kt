@@ -21,6 +21,29 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class NavigationTest {
     @get:Rule val ui = createAndroidComposeRule<MainActivity>(effectContext = kotlinx.coroutines.test.StandardTestDispatcher())
+
+    @Before fun prepararInicioSinSesionAnterior() {
+        ui.waitUntil(30_000) {
+            listOf("Iniciar Sesión", "Ingresar", "Nuevo trámite", "Bandeja del Notario").any {
+                ui.onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty()
+            }
+        }
+        if (ui.onAllNodesWithText("Bandeja del Notario").fetchSemanticsNodes().isNotEmpty()) {
+            ui.onNodeWithContentDescription("Cerrar sesión").performClick()
+            esperar("Ingresar")
+        } else if (ui.onAllNodesWithText("Nuevo trámite").fetchSemanticsNodes().isNotEmpty()) {
+            ui.onNodeWithText("Perfil").performClick()
+            esperar("Mi perfil")
+            ui.onNodeWithText("Cerrar sesión").performClick()
+            ui.onAllNodesWithText("Cerrar sesión").onLast().performClick()
+            esperar("Ingresar")
+        }
+        if (ui.onAllNodesWithText("Ingresar").fetchSemanticsNodes().isNotEmpty()) {
+            ui.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        }
+        esperar("Iniciar Sesión")
+    }
+
     private fun esperar(texto: String) {
         try {
             ui.waitUntil(30_000) { ui.onAllNodesWithText(texto).fetchSemanticsNodes().isNotEmpty() }
@@ -28,17 +51,19 @@ class NavigationTest {
             throw AssertionError("No se encontró: $texto\n${ui.onRoot().printToString()}", e)
         }
     }
-    private fun login(correo: String = "ana.demo@notariax.test", clave: String = "demo123", notario: Boolean = false) {
+    private fun login(correo: String = "ana.demo@notariax.test", clave: String = "demo123", notario: Boolean = false, recordar: Boolean = false) {
         esperar("Iniciar Sesión")
         ui.onNodeWithText("Iniciar Sesión").performClick()
         if (notario) ui.onNodeWithText("Notario").performClick()
         ui.onNodeWithTag("correo_login").performScrollTo().performTextInput(correo)
         ui.onNodeWithTag("clave_login").performScrollTo().performTextInput(clave)
+        ui.onNodeWithTag("recordar_sesion").performScrollTo().assertIsOff()
+        if (recordar) ui.onNodeWithTag("recordar_sesion").performClick()
         ui.onNodeWithText("Ingresar").performScrollTo().assertIsEnabled().performClick()
     }
     @Test fun personaPuedeSalirYEntrarComoNotario() {
         login()
-        esperar("Mis trámites")
+        esperar("Nuevo trámite")
         ui.onNodeWithText("Perfil").performClick()
         esperar("Mi perfil")
         esperar("ana.demo@notariax.test")
@@ -55,7 +80,7 @@ class NavigationTest {
     }
     @Test fun correccionAbreFormularioYSelectorNativoYResisteRotacion() {
         login()
-        esperar("Mis trámites")
+        esperar("Nuevo trámite")
         esperar("Ver detalle")
         ui.waitForIdle()
         ui.onNodeWithText("Ver detalle").performScrollTo().performClick()
@@ -85,7 +110,7 @@ class NavigationTest {
     }
     @Test fun solicitaConTextoSinDocumentoYMuestraElTextoAlNotario() {
         login()
-        esperar("Mis trámites")
+        esperar("Nuevo trámite")
         ui.onNodeWithText("Nuevo trámite").performClick()
         ui.onNodeWithText("Poder simple").performClick()
         esperar("Solicitud de trámite")
@@ -99,7 +124,7 @@ class NavigationTest {
         ui.onNodeWithText("Revisar y enviar solicitud").performScrollTo().performClick()
         ui.onNode(hasText(texto) and !hasSetTextAction()).assertExists()
         ui.onNodeWithText("Confirmar y enviar").performClick()
-        esperar("Mis trámites")
+        esperar("Nuevo trámite")
         val tramiteId = runBlocking {
             NotixDatabase.getDatabase(ui.activity).tramiteDao().getTodosLosTramites().first().single { it.tramite.textoSolicitud == texto }.tramite.id
         }
@@ -119,4 +144,50 @@ class NavigationTest {
         ui.onNode(hasText(texto) and !hasSetTextAction()).assertExists()
         ui.onNodeWithText("Sin documento de respaldo").assertExists()
     }
+    private fun reiniciarEstadoEnMemoria() {
+        ui.activityRule.scenario.onActivity { it.viewModelStore.clear() }
+        ui.activityRule.scenario.recreate()
+    }
+
+    @Test fun recordarPersonaEvitaLoginAlReabrirYCerrarSesionLoBorra() {
+        login(recordar = true)
+        esperar("Nuevo trámite")
+        ui.onNodeWithText("Perfil").performClick()
+        esperar("Mi perfil")
+        reiniciarEstadoEnMemoria()
+        esperar("Nuevo trámite")
+        ui.onNodeWithText("Perfil").performClick()
+        esperar("ana.demo@notariax.test")
+        ui.onNodeWithText("Cerrar sesión").performClick()
+        ui.onAllNodesWithText("Cerrar sesión").onLast().performClick()
+        esperar("Ingresar")
+        reiniciarEstadoEnMemoria()
+        esperar("Ingresar")
+        ui.onNodeWithTag("recordar_sesion").performScrollTo().assertIsOff()
+    }
+
+    @Test fun sinRecordarVuelveAIngresoAlReiniciar() {
+        login()
+        esperar("Nuevo trámite")
+        reiniciarEstadoEnMemoria()
+        esperar("Iniciar Sesión")
+        ui.onNodeWithText("Nuevo trámite").assertDoesNotExist()
+    }
+
+    @Test fun recordarNotarioRestauraSuBandeja() {
+        login("notario.demo@notariax.test", "notario123", notario = true, recordar = true)
+        esperar("Bandeja del Notario")
+        reiniciarEstadoEnMemoria()
+        esperar("Bandeja del Notario")
+        ui.onNodeWithText("Solicitudes recibidas").assertExists()
+    }
+
+    @Test fun credencialesIncorrectasNoGuardanSesionAunqueLaCasillaEsteMarcada() {
+        login(clave = "clave_incorrecta", recordar = true)
+        esperar("Correo, contraseña o perfil incorrectos.")
+        val valores = ui.activity.getSharedPreferences(com.duoc.notix.repository.SesionRepository.ARCHIVO, android.content.Context.MODE_PRIVATE).all
+        assertTrue(valores.isEmpty())
+        ui.onNodeWithTag("recordar_sesion").performScrollTo().assertIsOn()
+    }
+
 }
