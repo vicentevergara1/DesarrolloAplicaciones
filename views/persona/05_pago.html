@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NotariaX - Pago del Trámite</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+  <a href="04_documentos.html" style="color: var(--flow); text-decoration: none;">← Volver a Documentos</a>
+
+  <main class="card" style="margin-top: 16px; max-width: 500px;">
+    <h2 style="color: var(--green); margin-top: 0;">Resumen de Pago</h2>
+    
+    <div style="background: var(--surface-2); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+      <p style="margin: 4px 0;"><strong>Trámite:</strong> Declaración Jurada de Ingresos</p>
+      <p style="margin: 4px 0;"><strong>Valor Notarial:</strong> $5.000 CLP</p>
+      <p style="margin: 4px 0;"><strong>Costo Plataforma:</strong> $1.500 CLP</p>
+      <hr style="border: 0; border-top: 1px solid var(--line); margin: 12px 0;">
+      <h3 style="margin: 0; color: var(--green);">Total: $6.500 CLP</h3>
+    </div>
+
+    <form action="06_agendamiento.html" method="GET">
+      <label style="display: block; margin-bottom: 8px; font-weight: bold;">Método de Pago</label>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+        <label class="card" style="padding: 10px; margin: 0; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="radio" name="pago" value="webpay" checked> Webpay Plus (Débito / Crédito)
+        </label>
+        <label class="card" style="padding: 10px; margin: 0; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="radio" name="pago" value="khipu"> Transferencia Simplificada (Khipu)
+        </label>
+      </div>
+
+      <button type="submit" class="btn-primary">Pagar y Continuar →</button>
+    </form>
+  </main>
+</body>
+</html>

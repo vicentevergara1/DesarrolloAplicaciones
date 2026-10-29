@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NotariaX - Agendar Cita</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+  <a href="05_pago.html" style="color: var(--flow); text-decoration: none;">← Volver al Pago</a>
+
+  <main class="card" style="margin-top: 16px; max-width: 500px;">
+    <h2 style="color: var(--green); margin-top: 0;">Agendar Firma Presencial</h2>
+    <p style="color: var(--ink-soft);">Selecciona el día y la hora para acudir a la notaría a validar la firma.</p>
+
+    <form action="02_mis_tramites.html" method="GET">
+      <div style="margin-bottom: 16px;">
+        <label for="fecha" style="display: block; margin-bottom: 4px; font-weight: bold;">Selecciona Fecha</label>
+        <input type="date" id="fecha" style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 6px;">
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label for="hora" style="display: block; margin-bottom: 4px; font-weight: bold;">Bloque Horario Disponible</label>
+        <select id="hora" style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 6px;">
+          <option>09:30 - 10:00 AM</option>
+          <option>11:00 - 11:30 AM</option>
+          <option>15:00 - 15:30 PM</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn-primary">Confirmar Cita y Finalizar</button>
+    </form>
+  </main>
+</body>
+</html>

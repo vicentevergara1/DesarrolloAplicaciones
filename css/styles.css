@@ -1,0 +1,80 @@
+:root {
+  --bg: #f3f6f4;
+  --surface: #ffffff;
+  --surface-2: #eaf0ed;
+  --ink: #12302b;
+  --ink-soft: #4a615c;
+  --line: #cfdad6;
+  --green: #0f4c45;
+  --flow: #5b3fb5;
+  --cross: #c4511a;
+  --ok: #1f7a4d;
+  --ok-bg: #e2f3ea;
+  --warn: #a96a00;
+  --warn-bg: #fbefd5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1917;
+    --surface: #15251f;
+    --surface-2: #1c312b;
+    --ink: #e4efeb;
+    --ink-soft: #9db4ad;
+    --line: #2c4640;
+    --green: #5fc2b2;
+    --flow: #a995f0;
+    --cross: #f09062;
+    --ok: #6fd1a0;
+    --warn: #f0c36a;
+    --ok-bg: #173a2b;
+    --warn-bg: #3a2f14;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, sans-serif;
+  padding: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.btn-primary {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+}
+
+.btn-flow {
+  background: var(--flow);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+.badge-ok { background: var(--ok-bg); color: var(--ok); }
+.badge-warn { background: var(--warn-bg); color: var(--warn); }

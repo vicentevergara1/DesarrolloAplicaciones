@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NotariaX - Documentos (1/4)</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+  <a href="03_detalle_tramite.html" style="color: var(--flow); text-decoration: none;">← Volver al Detalle</a>
+
+  <main class="card" style="margin-top: 16px;">
+    <h2 style="color: var(--green); margin-top: 0;">Documentos (1/4)</h2>
+    <p style="color: var(--ink-soft);">Adjunta o visualiza el borrador del documento notarial.</p>
+
+    <div style="border: 2px dashed var(--line); border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 20px;">
+      <p style="margin: 0 0 8px 0;">Arrastra tu archivo PDF aquí o</p>
+      <input type="file" id="docUpload" accept=".pdf" style="display: none;">
+      <button onclick="document.getElementById('docUpload').click();" class="btn-flow">Seleccionar Archivo</button>
+    </div>
+
+    <div style="background: var(--surface-2); padding: 12px; border-radius: 6px; margin-bottom: 20px;">
+      <strong>Archivo actual:</strong> Borrador_Declaracion_Jurada.pdf
+    </div>
+
+    <a href="05_pago.html" class="btn-primary" style="display: block; text-align: center; text-decoration: none;">Continuar a Pago →</a>
+  </main>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Document background -->
+    <path
+        android:fillColor="#0F4C45"
+        android:pathData="M14,2H6C4.9,2 4,2.9 4,4V20C4,21.1 4.9,22 6,22H18C19.1,22 20,21.1 20,20V8L14,2Z" />
+    <path
+        android:fillColor="#1B6B45"
+        android:pathData="M13,3.5L18.5,9H13V3.5Z" />
+    <!-- Lines on document -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M8,12H16V13.5H8V12ZM8,15H16V16.5H8V15ZM8,9H11V10.5H8V9Z" />
+    <!-- Verified Badge / Seal -->
+    <path
+        android:fillColor="#E0782B"
+        android:pathData="M17,14L18.5,15.5L21,13L22,14L18.5,17.5L16,15L17,14Z" />
+</vector>

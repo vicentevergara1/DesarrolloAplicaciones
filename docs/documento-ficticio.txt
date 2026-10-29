@@ -1,6 +1,0 @@
-NOTARIAX — DOCUMENTO FICTICIO DE PRUEBA
-
-Archivo para probar el selector de Android en el MVP académico DSY1105.
-Solicitante: Persona Demo.
-Antecedentes: información sintética para representar un trámite.
-No contiene datos personales reales ni produce efectos legales.
