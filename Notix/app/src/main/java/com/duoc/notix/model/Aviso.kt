@@ -1,4 +1,4 @@
-package com.duoc.notix.data.model
+package com.duoc.notix.model
 
 data class Aviso(
     val id: String,

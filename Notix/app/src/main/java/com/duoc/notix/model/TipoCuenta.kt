@@ -1,4 +1,4 @@
-package com.duoc.notix.data.model
+package com.duoc.notix.model
 
 enum class TipoCuenta(val etiqueta: String) {
     PERSONA("Persona"),

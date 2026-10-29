@@ -14,8 +14,8 @@ import androidx.room.TypeConverters
         EventoHistorialEntity::class,
         AvisoEntity::class
     ],
-    version = 2,
-    exportSchema = false
+    version = 3,
+    exportSchema = true
 )
 @TypeConverters(NotixTypeConverters::class)
 abstract class NotixDatabase : RoomDatabase() {
@@ -25,6 +25,14 @@ abstract class NotixDatabase : RoomDatabase() {
     abstract fun avisoDao(): AvisoDao
 
     companion object {
+        val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE documentos ADD COLUMN rutaLocal TEXT")
+                db.execSQL("ALTER TABLE documentos ADD COLUMN mime TEXT")
+                db.execSQL("ALTER TABLE tramites ADD COLUMN firmaConfirmada INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         @Volatile
         private var INSTANCE: NotixDatabase? = null
 
@@ -35,7 +43,7 @@ abstract class NotixDatabase : RoomDatabase() {
                     NotixDatabase::class.java,
                     "notix_database"
                 )
-                .fallbackToDestructiveMigration()
+                .addMigrations(MIGRATION_2_3)
                 .build()
                 INSTANCE = instance
                 instance

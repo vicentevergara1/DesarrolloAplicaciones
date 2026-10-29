@@ -9,15 +9,14 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.duoc.notix.data.local.NotixDatabase
-import com.duoc.notix.data.model.Antecedentes
-import com.duoc.notix.data.model.Documento
-import com.duoc.notix.data.model.EstadoDocumento
-import com.duoc.notix.data.model.EstadoTramite
-import com.duoc.notix.data.model.EventoHistorial
-import com.duoc.notix.data.model.FormatoTramite
-import com.duoc.notix.data.model.TipoCuenta
-import com.duoc.notix.data.model.Tramite
-import com.duoc.notix.data.model.Usuario
+import com.duoc.notix.model.Antecedentes
+import com.duoc.notix.model.Documento
+import com.duoc.notix.model.EstadoTramite
+import com.duoc.notix.model.EventoHistorial
+import com.duoc.notix.model.FormatoTramite
+import com.duoc.notix.model.TipoCuenta
+import com.duoc.notix.model.Tramite
+import com.duoc.notix.model.Usuario
 import com.duoc.notix.data.validation.RutValidator
 import com.duoc.notix.repository.TramiteRepository
 import com.duoc.notix.util.fechaHoraActual
@@ -34,7 +33,9 @@ data class CrearTramiteUiState(
 class CrearTramiteViewModel(
     private val repo: TramiteRepository,
     private val usuarioId: String,
-    val formato: FormatoTramite
+    val formato: FormatoTramite,
+    private val documentosLocales: com.duoc.notix.data.local.DocumentosLocales,
+    private val tramiteId: String? = null
 ) : ViewModel() {
 
     var uiState by mutableStateOf(CrearTramiteUiState())
@@ -50,8 +51,16 @@ class CrearTramiteViewModel(
         private set
     var actuaEnNombreDe by mutableStateOf("")
         private set
-    var documentoAdjuntoNombre by mutableStateOf<String?>(null)
+    private var documento by mutableStateOf<Documento?>(null)
+    private var original: Tramite? = null
+    private var archivoNuevo = false
+    val documentoAdjuntoNombre: String? get() = documento?.nombre
+    var importando by mutableStateOf(false)
         private set
+    var firmaConfirmada by mutableStateOf(false)
+        private set
+    fun onFirmaChange(valor: Boolean) { firmaConfirmada = valor }
+
 
     var nombreError by mutableStateOf<String?>(null)
         private set
@@ -69,8 +78,23 @@ class CrearTramiteViewModel(
     private fun cargarUsuario() {
         viewModelScope.launch {
             uiState = uiState.copy(cargandoUsuario = true)
+            try {
             val usuario = repo.obtenerUsuario(usuarioId)
-            if (usuario != null) {
+            require(usuario != null && usuario.tipoCuenta != TipoCuenta.NOTARIO) { "No se encuentra una cuenta solicitante." }
+            if (tramiteId != null) {
+                original = repo.obtenerTramite(tramiteId)
+                require(original?.solicitanteId == usuario.id && original?.estado == EstadoTramite.DEVUELTO) { "Este trámite no está disponible para corregir." }
+                val t = requireNotNull(original)
+                nombreCompleto = t.antecedentes.nombreCompleto
+                run = t.antecedentes.documentoIdentidad
+                correo = t.antecedentes.correoContacto
+                comuna = t.antecedentes.comuna
+                actuaEnNombreDe = t.actuaEnNombreDe.orEmpty()
+                documento = t.documentos.firstOrNull { it.rutaLocal != null }
+                uiState = uiState.copy(usuario = usuario, cargandoUsuario = false)
+                return@launch
+            }
+            run {
                 nombreCompleto = usuario.nombreCompleto
                 run = usuario.run
                 correo = usuario.correo
@@ -80,53 +104,79 @@ class CrearTramiteViewModel(
                 }
             }
             uiState = uiState.copy(usuario = usuario, cargandoUsuario = false)
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) { uiState = uiState.copy(cargandoUsuario = false, errorGeneral = e.message ?: "No se pudo cargar el trámite.") }
         }
     }
 
     fun onNombreChange(nuevo: String) {
         nombreCompleto = nuevo
-        nombreError = if (nuevo.isBlank()) "El nombre no puede estar vacío" else null
+        nombreError = if (nuevo.trim().length < 3) "Ingresa al menos 3 caracteres" else null
     }
 
     fun onRunChange(nuevo: String) {
-        run = nuevo
-        runError = null
+        run = com.duoc.notix.util.limpiarRut(nuevo)
+        runError = RutValidator.validar(run, "RUN")
     }
 
     fun onCorreoChange(nuevo: String) {
         correo = nuevo
-        correoError = if (nuevo.isBlank() || !nuevo.contains("@")) "Correo inválido" else null
+        correoError = if (!android.util.Patterns.EMAIL_ADDRESS.matcher(nuevo.trim()).matches()) "Correo inválido" else null
     }
 
     fun onComunaChange(nuevo: String) {
         comuna = nuevo
-        comunaError = if (nuevo.isBlank()) "Ingresa la comuna" else null
+        comunaError = if (nuevo.trim().length < 3) "Ingresa la comuna" else null
     }
 
     fun onActuaEnNombreDeChange(nuevo: String) {
         actuaEnNombreDe = nuevo
     }
 
-    fun onDocumentoAdjuntado(nombre: String?) {
-        documentoAdjuntoNombre = nombre
+    fun onDocumentoAdjuntado(uri: android.net.Uri) {
+        if (importando || uiState.guardando) return
+        importando = true
+        viewModelScope.launch {
+            try {
+                val nuevo = documentosLocales.importar(uri)
+                if (archivoNuevo) documento?.let(documentosLocales::borrar)
+                documento = nuevo
+                archivoNuevo = true
+                uiState = uiState.copy(errorGeneral = null)
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) { uiState = uiState.copy(errorGeneral = e.message ?: "No se pudo adjuntar el archivo.") }
+            finally { importando = false }
+        }
+    }
+
+    override fun onCleared() {
+        if (archivoNuevo && !uiState.guardadoExitoso) documento?.let(documentosLocales::borrar)
+        super.onCleared()
     }
 
     fun validarFormulario(): Boolean {
-        val errNombre = if (nombreCompleto.isBlank()) "Ingresa el nombre completo" else null
+        val errNombre = if (nombreCompleto.trim().length < 3) "Ingresa el nombre completo" else null
         val errRun = RutValidator.validar(run, "RUN")
-        val errCorreo = if (correo.isBlank()) "Ingresa el correo" else if (!correo.contains("@")) "Correo inválido" else null
-        val errComuna = if (comuna.isBlank()) "Ingresa la comuna" else null
+        val errCorreo = if (correo.isBlank()) "Ingresa el correo" else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(correo.trim()).matches()) "Correo inválido" else null
+        val errComuna = if (comuna.trim().length < 3) "Ingresa la comuna" else null
 
         nombreError = errNombre
         runError = errRun
         correoError = errCorreo
         comunaError = errComuna
 
-        return errNombre == null && errRun == null && errCorreo == null && errComuna == null
+        val extra = when {
+            importando -> "Espera a que termine de adjuntarse el archivo."
+            documento == null -> "Adjunta un documento ficticio antes de enviar."
+            !firmaConfirmada -> "Confirma la firma simulada antes de enviar."
+            else -> null
+        }
+        uiState = uiState.copy(errorGeneral = extra)
+        return errNombre == null && errRun == null && errCorreo == null && errComuna == null && extra == null
     }
 
     fun guardarTramite(onExito: () -> Unit) {
-        if (uiState.guardando) return // previene envíos duplicados
+        if (uiState.guardando || uiState.guardadoExitoso || uiState.cargandoUsuario) return // previene envíos duplicados
 
         if (!validarFormulario()) return
 
@@ -135,8 +185,7 @@ class CrearTramiteViewModel(
         viewModelScope.launch {
             uiState = uiState.copy(guardando = true, errorGeneral = null)
             try {
-                val nuevoId = "TX-2026-${(1000..9999).random()}"
-                val docNombre = documentoAdjuntoNombre ?: "${formato.nombre.lowercase().replace(" ", "_")}_solicitud.pdf"
+                val nuevoId = tramiteId ?: "TX-${System.currentTimeMillis()}-${java.util.UUID.randomUUID().toString().take(8)}"
                 val nuevoTramite = Tramite(
                     id = nuevoId,
                     formato = formato,
@@ -145,43 +194,29 @@ class CrearTramiteViewModel(
                     actuaEnNombreDe = actuaEnNombreDe.ifBlank { null },
                     tipoFirma = formato.firmaRequerida,
                     estado = EstadoTramite.ENVIADO,
-                    documentos = listOf(
-                        Documento(
-                            nombre = docNombre,
-                            tamanoKb = (120..350).random(),
-                            estado = EstadoDocumento.ACEPTADO
-                        )
-                    ),
+                    documentos = listOf(requireNotNull(documento)),
+                    firmaConfirmada = firmaConfirmada,
                     antecedentes = Antecedentes(
                         nombreCompleto = nombreCompleto.trim(),
                         documentoIdentidad = run.trim(),
                         correoContacto = correo.trim(),
                         comuna = comuna.trim()
                     ),
-                    historial = listOf(
+                    historial = original?.historial ?: listOf(
                         EventoHistorial(
-                            descripcion = "Trámite ingresado correctamente",
+                            descripcion = "Trámite ingresado con ${formato.firmaRequerida.etiqueta.lowercase()} simulada confirmada",
                             fechaHora = fechaHoraActual(),
                             rol = usuarioActual.tipoCuenta
                         )
                     )
                 )
 
-                repo.crearTramite(nuevoTramite)
-
-                val avisoIngreso = com.duoc.notix.data.model.Aviso(
-                    id = "AVS-${System.currentTimeMillis().toString().takeLast(6)}",
-                    destinatarioId = usuarioActual.id,
-                    tramiteId = nuevoId,
-                    mensaje = "Tu trámite $nuevoId (${formato.nombre}) fue enviado al notario con éxito.",
-                    fechaHora = fechaHoraActual(),
-                    leido = false
-                )
-                repo.crearAviso(avisoIngreso)
-
+                if (tramiteId == null) repo.crearTramite(nuevoTramite, usuarioId)
+                else repo.reenviarTramite(nuevoTramite, usuarioId)
+                if (archivoNuevo) original?.documentos?.filter { it.rutaLocal != documento?.rutaLocal }?.forEach(documentosLocales::borrar)
                 uiState = uiState.copy(guardando = false, guardadoExitoso = true)
                 onExito()
-            } catch (e: Exception) {
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
                 uiState = uiState.copy(
                     guardando = false,
                     errorGeneral = "Error al guardar el trámite: ${e.localizedMessage ?: "Error desconocido"}"
@@ -191,13 +226,15 @@ class CrearTramiteViewModel(
     }
 
     companion object {
-        fun factory(context: Context, usuarioId: String, formato: FormatoTramite) = viewModelFactory {
+        fun factory(context: Context, usuarioId: String, formato: FormatoTramite, tramiteId: String? = null) = viewModelFactory {
             initializer {
                 val db = NotixDatabase.getDatabase(context.applicationContext)
                 CrearTramiteViewModel(
-                    TramiteRepository(db.tramiteDao(), db.avisoDao(), db.usuarioDao()),
+                    TramiteRepository(db.tramiteDao(), db.avisoDao(), db.usuarioDao(), db),
                     usuarioId,
-                    formato
+                    formato,
+                    com.duoc.notix.data.local.DocumentosLocales(context.applicationContext),
+                    tramiteId
                 )
             }
         }

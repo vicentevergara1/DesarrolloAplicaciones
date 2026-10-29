@@ -6,9 +6,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.duoc.notix.data.local.NotixDatabase
-import com.duoc.notix.data.model.EstadoTramite
-import com.duoc.notix.data.model.TipoCuenta
-import com.duoc.notix.data.model.Tramite
+import com.duoc.notix.model.EstadoTramite
+import com.duoc.notix.model.TipoCuenta
+import com.duoc.notix.model.Tramite
 import com.duoc.notix.repository.TramiteRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -82,7 +82,7 @@ class MisTramitesViewModel(
             initializer {
                 val db = NotixDatabase.getDatabase(context.applicationContext)
                 MisTramitesViewModel(
-                    TramiteRepository(db.tramiteDao(), db.avisoDao(), db.usuarioDao()),
+                    TramiteRepository(db.tramiteDao(), db.avisoDao(), db.usuarioDao(), db),
                     usuarioId
                 )
             }

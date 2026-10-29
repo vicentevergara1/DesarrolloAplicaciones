@@ -27,9 +27,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.duoc.notix.data.model.EstadoTramite
-import com.duoc.notix.data.model.TipoFirma
-import com.duoc.notix.data.model.Tramite
+import com.duoc.notix.model.EstadoTramite
+import com.duoc.notix.model.TipoFirma
+import com.duoc.notix.model.Tramite
 import com.duoc.notix.ui.theme.NotixColors
 import com.duoc.notix.util.fechaCorta
 import androidx.compose.runtime.Composable

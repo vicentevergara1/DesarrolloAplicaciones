@@ -4,10 +4,10 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.duoc.notix.data.model.EstadoDocumento
-import com.duoc.notix.data.model.EstadoTramite
-import com.duoc.notix.data.model.TipoCuenta
-import com.duoc.notix.data.model.TipoFirma
+import com.duoc.notix.model.EstadoDocumento
+import com.duoc.notix.model.EstadoTramite
+import com.duoc.notix.model.TipoCuenta
+import com.duoc.notix.model.TipoFirma
 
 @Entity(
     tableName = "usuarios",
@@ -48,7 +48,8 @@ data class TramiteEntity(
     val antecedentesCorreoContacto: String,
     val antecedentesComuna: String,
     val observacion: String? = null,
-    val legibilidadConfirmada: Boolean = false
+    val legibilidadConfirmada: Boolean = false,
+    @androidx.room.ColumnInfo(defaultValue = "0") val firmaConfirmada: Boolean = false
 )
 
 @Entity(
@@ -62,7 +63,9 @@ data class DocumentoEntity(
     val tramiteId: String,
     val nombre: String,
     val tamanoKb: Int,
-    val estado: EstadoDocumento = EstadoDocumento.ACEPTADO
+    val estado: EstadoDocumento = EstadoDocumento.ACEPTADO,
+    val rutaLocal: String? = null,
+    val mime: String? = null
 )
 
 @Entity(

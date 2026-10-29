@@ -1,4 +1,4 @@
-package com.duoc.notix.data.model
+package com.duoc.notix.model
 
 enum class TipoFirma(val etiqueta: String, val descripcion: String) {
     SIMPLE("Firma simple", "Dibuja tu firma en pantalla"),

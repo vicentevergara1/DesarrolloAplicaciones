@@ -7,9 +7,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.duoc.notix.data.local.NotixDatabase
-import com.duoc.notix.data.model.*
-import com.duoc.notix.data.repository.AuthRepository
-import com.duoc.notix.data.repository.AuthResult
+import com.duoc.notix.model.*
+import com.duoc.notix.repository.AuthRepository
+import com.duoc.notix.repository.AuthResult
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -20,12 +20,22 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
     var errorRegistro by mutableStateOf<String?>(null)
         private set
 
+    var cargando by mutableStateOf(false)
+        private set
+
     fun registrar(tipo: TipoCuenta, v: Map<String, String>, pass: String, onOk: (Usuario) -> Unit) {
+        if (cargando) return
+        cargando = true
+        errorRegistro = null
         viewModelScope.launch {
+            try {
             when (val r = repo.registrar(construirUsuario(tipo, v, pass))) {
                 is AuthResult.Success -> { errorRegistro = null; onOk(r.usuario) }
                 is AuthResult.Error -> errorRegistro = r.message
             }
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) { errorRegistro = "No se pudo acceder a la cuenta. Inténtalo nuevamente." }
+            finally { cargando = false }
         }
     }
 

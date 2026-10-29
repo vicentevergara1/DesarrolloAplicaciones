@@ -1,4 +1,4 @@
-package com.duoc.notix.data.model
+package com.duoc.notix.model
 
 data class Tramite(
     val id: String,                          // TX-2026-0043
@@ -12,7 +12,8 @@ data class Tramite(
     val antecedentes: Antecedentes,
     val observacion: String? = null,         // texto del notario al devolver
     val legibilidadConfirmada: Boolean = false, // el notario la marca antes de aprobar
-    val historial: List<EventoHistorial>
+    val historial: List<EventoHistorial>,
+    val firmaConfirmada: Boolean = false
 )
 
 data class Antecedentes(
@@ -25,7 +26,9 @@ data class Antecedentes(
 data class Documento(
     val nombre: String,                      // poder_demo.pdf
     val tamanoKb: Int,
-    val estado: EstadoDocumento = EstadoDocumento.ACEPTADO
+    val estado: EstadoDocumento = EstadoDocumento.ACEPTADO,
+    val rutaLocal: String? = null,
+    val mime: String? = null
 )
 
 enum class EstadoDocumento(val etiqueta: String) {

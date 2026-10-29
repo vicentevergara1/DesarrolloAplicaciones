@@ -1,4 +1,4 @@
-package com.duoc.notix.data.model
+package com.duoc.notix.model
 
 enum class EstadoTramite(val etiquetaPersona: String, val etiquetaNotario: String) {
     ENVIADO("Enviado", "Pendiente"),

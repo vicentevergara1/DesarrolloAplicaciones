@@ -41,7 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.duoc.notix.data.model.Aviso
+import com.duoc.notix.model.Aviso
 import com.duoc.notix.ui.components.BarraInferiorPersona
 import com.duoc.notix.ui.theme.NotixColors
 import com.duoc.notix.viewmodel.AvisosViewModel
@@ -51,6 +51,7 @@ import com.duoc.notix.viewmodel.AvisosViewModel
 fun AvisosScreen(
     usuarioId: String,
     onVolver: () -> Unit,
+    onPerfil: () -> Unit,
     vm: AvisosViewModel = viewModel(
         key = usuarioId,
         factory = AvisosViewModel.factory(LocalContext.current, usuarioId)
@@ -88,7 +89,7 @@ fun AvisosScreen(
                 onInicio = onVolver,
                 onTramites = onVolver,
                 onAvisos = {},
-                onPerfil = {}
+                onPerfil = onPerfil
             )
         }
     ) { padding ->

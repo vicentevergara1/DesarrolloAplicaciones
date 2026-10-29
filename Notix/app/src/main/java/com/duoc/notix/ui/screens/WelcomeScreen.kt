@@ -45,15 +45,15 @@ fun WelcomeScreen(
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0F4C45) // Variable --green
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = "Trámites notariales simples y digitales",
                 fontSize = 15.sp,
                 color = Color(0xFF4A615C) // Variable --ink-soft
             )
-            
+
             Spacer(modifier = Modifier.height(48.dp))
 
             // Botón Iniciar Sesión

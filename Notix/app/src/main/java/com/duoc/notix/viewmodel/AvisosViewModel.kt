@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.duoc.notix.data.local.NotixDatabase
-import com.duoc.notix.data.model.Aviso
+import com.duoc.notix.model.Aviso
 import com.duoc.notix.repository.TramiteRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +32,7 @@ class AvisosViewModel(
             initializer {
                 val db = NotixDatabase.getDatabase(context.applicationContext)
                 AvisosViewModel(
-                    TramiteRepository(db.tramiteDao(), db.avisoDao(), db.usuarioDao()),
+                    TramiteRepository(db.tramiteDao(), db.avisoDao(), db.usuarioDao(), db),
                     usuarioId
                 )
             }

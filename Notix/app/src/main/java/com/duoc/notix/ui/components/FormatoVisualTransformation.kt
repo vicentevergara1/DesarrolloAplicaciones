@@ -22,7 +22,7 @@ open class FormatoVisualTransformation(
                 else posiciones.getOrNull(offset - 1)?.plus(1) ?: formateado.length
 
             override fun transformedToOriginal(offset: Int): Int =
-                formateado.take(offset).count { it != '.' && it != '-' }
+                formateado.take(offset.coerceIn(0, formateado.length)).count { it != '.' && it != '-' }.coerceIn(0, text.length)
         }
         return TransformedText(AnnotatedString(formateado), mapping)
     }

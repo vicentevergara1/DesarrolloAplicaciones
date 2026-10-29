@@ -29,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -39,8 +40,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.duoc.notix.data.model.TipoCuenta
-import com.duoc.notix.data.model.Usuario
+import com.duoc.notix.model.TipoCuenta
+import com.duoc.notix.model.Usuario
 import com.duoc.notix.ui.components.notixTextFieldColors
 import com.duoc.notix.ui.theme.NotixColors
 import com.duoc.notix.viewmodel.LoginViewModel
@@ -82,7 +83,7 @@ fun LoginScreen(
 
             Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFE8F1EF)) {
                 Text(
-                    "Tus trámites notariales, más simples y accesibles.",
+                    "Simulación académica. Usa solo datos ficticios.",
                     modifier = Modifier.padding(12.dp), fontSize = 12.sp, color = NotixColors.Brand
                 )
             }
@@ -117,6 +118,7 @@ fun LoginScreen(
 
             OutlinedTextField(
                 value = email,
+                modifier = Modifier.fillMaxWidth().testTag("correo_login"),
                 onValueChange = { email = it },
                 label = { Text("Correo") },
                 placeholder = { Text("ej. ana.demo@notariax.test") },
@@ -124,11 +126,11 @@ fun LoginScreen(
                 shape = RoundedCornerShape(10.dp),
                 colors = notixTextFieldColors(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = password,
+                modifier = Modifier.fillMaxWidth().testTag("clave_login"),
                 onValueChange = { password = it },
                 label = { Text("Ingresa tu clave") },
                 singleLine = true,
@@ -145,11 +147,11 @@ fun LoginScreen(
                         Text(if (verClave) "Ocultar" else "Ver", fontSize = 12.sp)
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
             )
 
             Button(
                 onClick = ::ingresar,
+                enabled = !vm.cargando,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = NotixColors.Brand)
@@ -163,7 +165,8 @@ fun LoginScreen(
             }
 
             OutlinedButton(
-                onClick = ::ingresar, // simulación: mismo resultado que Ingresar
+                onClick = ::ingresar,
+                enabled = !vm.cargando, // simulación: mismo resultado que Ingresar
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(10.dp),
                 border = BorderStroke(1.dp, NotixColors.Borde)

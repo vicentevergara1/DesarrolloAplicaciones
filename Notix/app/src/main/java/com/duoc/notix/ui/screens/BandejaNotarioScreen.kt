@@ -3,6 +3,9 @@ package com.duoc.notix.ui.screens
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Checkbox
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,8 +56,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.duoc.notix.data.model.EstadoTramite
-import com.duoc.notix.data.model.Tramite
+import com.duoc.notix.model.EstadoTramite
+import com.duoc.notix.model.Tramite
 import com.duoc.notix.ui.components.notixTextFieldColors
 import com.duoc.notix.ui.theme.NotixColors
 import com.duoc.notix.viewmodel.BandejaNotarioViewModel
@@ -75,6 +78,7 @@ fun BandejaNotarioScreen(
 
     Scaffold(
         containerColor = NotixColors.Fondo,
+        snackbarHost = { vm.error?.let { Text(it, color = NotixColors.AlertaTexto, modifier = Modifier.padding(16.dp)) } },
         topBar = {
             TopAppBar(
                 title = {
@@ -141,7 +145,7 @@ fun BandejaNotarioScreen(
                 items(state.tramites, key = { it.id }) { tramite ->
                     TramiteNotarioCard(
                         tramite = tramite,
-                        onRevisar = { tramiteParaRevisar = tramite }
+                        onRevisar = { if (!vm.procesando) tramiteParaRevisar = tramite }
                     )
                 }
 
@@ -321,6 +325,10 @@ private fun RevisionTramiteDialog(
     onAprobar: () -> Unit,
     onDevolver: (String) -> Unit
 ) {
+    val context = LocalContext.current
+    var errorDocumento by remember { mutableStateOf<String?>(null) }
+    var legibilidad by remember { mutableStateOf(false) }
+    val editable = tramite.estado == EstadoTramite.ENVIADO
     var modoDevolver by remember { mutableStateOf(false) }
     var observacion by remember { mutableStateOf("") }
     var errorObservacion by remember { mutableStateOf<String?>(null) }
@@ -337,7 +345,7 @@ private fun RevisionTramiteDialog(
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     "Trámite ${tramite.id} - ${tramite.formato.nombre}",
                     fontWeight = FontWeight.Bold,
@@ -357,10 +365,17 @@ private fun RevisionTramiteDialog(
                     Spacer(Modifier.height(4.dp))
                     Text("Documentos adjuntos:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = NotixColors.Tinta)
                     tramite.documentos.forEach { doc ->
-                        Text("• ${doc.nombre} (${doc.tamanoKb} KB)", fontSize = 12.sp, color = NotixColors.Gris)
+                        TextButton(onClick = { errorDocumento = com.duoc.notix.data.local.abrirDocumento(context, doc) }) { Text("${doc.nombre} (${doc.tamanoKb} KB)", fontSize = 12.sp) }
                     }
                 }
 
+                errorDocumento?.let { Text(it, color = NotixColors.AlertaTexto) }
+                Text("Evaluación y firma notariales simuladas; sin validez legal.", fontSize = 12.sp)
+                if (editable) Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = legibilidad, onCheckedChange = { legibilidad = it })
+                    Text("Confirmo que revisé la legibilidad de los documentos ficticios.", fontSize = 12.sp)
+                }
+                if (!editable) Text("Este trámite ya fue evaluado. Una devolución requiere que el solicitante lo corrija y reenvíe.", fontSize = 12.sp)
                 if (modoDevolver) {
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
@@ -379,7 +394,9 @@ private fun RevisionTramiteDialog(
             }
         },
         confirmButton = {
-            if (modoDevolver) {
+            if (!editable) {
+                TextButton(onClick = onDismiss) { Text("Cerrar") }
+            } else if (modoDevolver) {
                 Button(
                     onClick = {
                         if (observacion.isBlank()) {
@@ -395,6 +412,7 @@ private fun RevisionTramiteDialog(
             } else {
                 Button(
                     onClick = onAprobar,
+                    enabled = legibilidad,
                     colors = ButtonDefaults.buttonColors(containerColor = NotixColors.Brand)
                 ) {
                     Icon(Icons.Outlined.Check, contentDescription = null)
@@ -404,7 +422,9 @@ private fun RevisionTramiteDialog(
             }
         },
         dismissButton = {
-            if (modoDevolver) {
+            if (!editable) {
+                TextButton(onClick = onDismiss) { Text("Volver") }
+            } else if (modoDevolver) {
                 TextButton(onClick = { modoDevolver = false }) {
                     Text("Cancelar", color = NotixColors.Gris)
                 }

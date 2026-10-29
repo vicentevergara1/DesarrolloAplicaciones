@@ -20,7 +20,7 @@ data class TramiteConDetalles(
 @Dao
 interface TramiteDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertTramite(tramite: TramiteEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -52,17 +52,23 @@ interface TramiteDao {
     @Query("SELECT * FROM tramites")
     fun getTodosLosTramites(): Flow<List<TramiteConDetalles>>
 
+    @Query("DELETE FROM documentos WHERE tramiteId = :id")
+    suspend fun borrarDocumentos(id: String)
+
+    @Query("SELECT * FROM tramites WHERE id = :id")
+    suspend fun buscarTramite(id: String): TramiteEntity?
+
     @Update
     suspend fun updateTramite(tramite: TramiteEntity)
 }
 @Dao
 interface UsuarioDao {
+    @Query("UPDATE usuarios SET contrasena = :clave WHERE id = :id")
+    suspend fun actualizarClave(id: String, clave: String)
+
 
     @Insert(onConflict = OnConflictStrategy.ABORT)      // falla si el correo o el id ya existen
     suspend fun insertUsuario(usuario: UsuarioEntity)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)    // para el seeder
-    suspend fun upsertUsuario(usuario: UsuarioEntity)
 
     @Query("SELECT * FROM usuarios WHERE correo = :correo LIMIT 1")
     suspend fun getUsuarioPorCorreo(correo: String): UsuarioEntity?
@@ -77,7 +83,7 @@ interface AvisoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAviso(aviso: AvisoEntity)
 
-    @Query("SELECT * FROM avisos WHERE destinatarioId = :destinatarioId ORDER BY fechaHora DESC")
+    @Query("SELECT * FROM avisos WHERE destinatarioId = :destinatarioId ORDER BY rowid DESC")
     fun getAvisosPorDestinatario(destinatarioId: String): Flow<List<AvisoEntity>>
 
     @Query("UPDATE avisos SET leido = 1 WHERE id = :id")

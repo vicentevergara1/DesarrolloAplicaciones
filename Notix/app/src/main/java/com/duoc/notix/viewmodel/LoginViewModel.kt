@@ -7,10 +7,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.duoc.notix.data.local.NotixDatabase
-import com.duoc.notix.data.model.TipoCuenta
-import com.duoc.notix.data.model.Usuario
-import com.duoc.notix.data.repository.AuthRepository
-import com.duoc.notix.data.repository.AuthResult
+import com.duoc.notix.model.TipoCuenta
+import com.duoc.notix.model.Usuario
+import com.duoc.notix.repository.AuthRepository
+import com.duoc.notix.repository.AuthResult
 import kotlinx.coroutines.launch
 
 class LoginViewModel(app: Application) : AndroidViewModel(app) {
@@ -20,12 +20,22 @@ class LoginViewModel(app: Application) : AndroidViewModel(app) {
     var error by mutableStateOf<String?>(null)
         private set
 
+    var cargando by mutableStateOf(false)
+        private set
+
     fun ingresar(tipo: TipoCuenta, correo: String, clave: String, onOk: (Usuario) -> Unit) {
+        if (cargando) return
+        cargando = true
+        error = null
         viewModelScope.launch {
+            try {
             when (val r = repo.login(tipo, correo, clave)) {
                 is AuthResult.Success -> { error = null; onOk(r.usuario) }
                 is AuthResult.Error -> error = r.message
             }
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) { error = "No se pudo acceder a la cuenta. Inténtalo nuevamente." }
+            finally { cargando = false }
         }
     }
 }

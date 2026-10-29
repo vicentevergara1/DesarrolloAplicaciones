@@ -1,28 +1,23 @@
 package com.duoc.notix.data.validation
 
 object RutValidator {
-
-    /** @param rutLimpio sin puntos ni guion, ej. "111111111" o "12345678K". */
-    fun validar(rutLimpio: String, etiqueta: String = "RUN"): String? {
-        if (rutLimpio.isBlank()) return "Ingresa el $etiqueta."
-        if (rutLimpio.length < 8) return "El $etiqueta está incompleto."
-
-        val cuerpo = rutLimpio.dropLast(1)
-        val dv = rutLimpio.last()
-
-        if (!cuerpo.all { it.isDigit() }) return "El $etiqueta solo puede tener números y una K al final."
-        if (dv != calcularDv(cuerpo)) return "El dígito verificador del $etiqueta no coincide."
-        return null
+    /** Acepta entradas con o sin puntos y guion; K y k son equivalentes. */
+    fun validar(valor: String, etiqueta: String = "RUN"): String? {
+        val rut = valor.filterNot { it == '.' || it == '-' || it.isWhitespace() }.uppercase()
+        if (rut.isEmpty()) return "Ingresa el $etiqueta ficticio."
+        if (rut.length !in 8..9 || rut.dropLast(1).any { it !in '0'..'9' } ||
+            rut.last() !in "0123456789K" || rut.first() == '0') {
+            return "Ingresa 7 u 8 dígitos y el verificador del $etiqueta ficticio."
+        }
+        val esperado = calcularDv(rut.dropLast(1))
+        return if (rut.last() == esperado) null
+        else "El dígito verificador del $etiqueta ficticio debe ser $esperado."
     }
 
     fun calcularDv(cuerpo: String): Char {
-        var suma = 0
-        var multiplicador = 2
-        for (c in cuerpo.reversed()) {
-            suma += c.digitToInt() * multiplicador
-            multiplicador = if (multiplicador == 7) 2 else multiplicador + 1
-        }
-        return when (val resto = 11 - (suma % 11)) {
+        require(cuerpo.length in 7..8 && cuerpo.all { it in '0'..'9' })
+        val suma = cuerpo.reversed().mapIndexed { i, c -> (c - '0') * (2 + i % 6) }.sum()
+        return when (val resto = 11 - suma % 11) {
             11 -> '0'
             10 -> 'K'
             else -> resto.digitToChar()

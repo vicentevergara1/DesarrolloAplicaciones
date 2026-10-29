@@ -1,6 +1,6 @@
 package com.duoc.notix.data.local
 
-import com.duoc.notix.data.model.*
+import com.duoc.notix.model.*
 
 fun UsuarioEntity.toDomain(): Usuario = Usuario(
     id = id,
@@ -51,7 +51,7 @@ fun TramiteConDetalles.toDomain(): Tramite {
             Documento(
                 nombre = it.nombre,
                 tamanoKb = it.tamanoKb,
-                estado = it.estado
+                estado = it.estado, rutaLocal = it.rutaLocal, mime = it.mime
             )
         },
         antecedentes = Antecedentes(
@@ -62,7 +62,8 @@ fun TramiteConDetalles.toDomain(): Tramite {
         ),
         observacion = tramite.observacion,
         legibilidadConfirmada = tramite.legibilidadConfirmada,
-        historial = historial.map {
+        firmaConfirmada = tramite.firmaConfirmada,
+        historial = historial.sortedBy { it.id }.map {
             EventoHistorial(
                 descripcion = it.descripcion,
                 fechaHora = it.fechaHora,
@@ -88,7 +89,7 @@ fun Tramite.toEntities(): Triple<TramiteEntity, List<DocumentoEntity>, List<Even
         antecedentesCorreoContacto = antecedentes.correoContacto,
         antecedentesComuna = antecedentes.comuna,
         observacion = observacion,
-        legibilidadConfirmada = legibilidadConfirmada
+        legibilidadConfirmada = legibilidadConfirmada, firmaConfirmada = firmaConfirmada
     )
 
     val documentoEntities = documentos.map {
@@ -96,7 +97,7 @@ fun Tramite.toEntities(): Triple<TramiteEntity, List<DocumentoEntity>, List<Even
             tramiteId = id,
             nombre = it.nombre,
             tamanoKb = it.tamanoKb,
-            estado = it.estado
+            estado = it.estado, rutaLocal = it.rutaLocal, mime = it.mime
         )
     }
 

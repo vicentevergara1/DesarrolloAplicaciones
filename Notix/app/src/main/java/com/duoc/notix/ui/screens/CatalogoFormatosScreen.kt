@@ -33,8 +33,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.duoc.notix.data.model.FormatoTramite
-import com.duoc.notix.data.model.catalogoFormatos
+import com.duoc.notix.model.FormatoTramite
+import com.duoc.notix.model.catalogoFormatos
 import com.duoc.notix.ui.theme.NotixColors
 
 @OptIn(ExperimentalMaterial3Api::class)

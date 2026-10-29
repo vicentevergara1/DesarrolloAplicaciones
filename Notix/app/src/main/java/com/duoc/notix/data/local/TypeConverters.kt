@@ -1,10 +1,10 @@
 package com.duoc.notix.data.local
 
 import androidx.room.TypeConverter
-import com.duoc.notix.data.model.EstadoDocumento
-import com.duoc.notix.data.model.EstadoTramite
-import com.duoc.notix.data.model.TipoCuenta
-import com.duoc.notix.data.model.TipoFirma
+import com.duoc.notix.model.EstadoDocumento
+import com.duoc.notix.model.EstadoTramite
+import com.duoc.notix.model.TipoCuenta
+import com.duoc.notix.model.TipoFirma
 
 class NotixTypeConverters {
 

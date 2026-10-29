@@ -41,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
+import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -56,8 +58,8 @@ import com.duoc.notix.ui.components.DocumentoVisualTransformation
 import com.duoc.notix.ui.components.FormatoVisualTransformation
 import com.duoc.notix.ui.components.RutVisualTransformation
 import com.duoc.notix.util.limpiarDocumento
-import com.duoc.notix.data.model.TipoCuenta
-import com.duoc.notix.data.model.Usuario
+import com.duoc.notix.model.TipoCuenta
+import com.duoc.notix.model.Usuario
 import com.duoc.notix.ui.components.notixTextFieldColors
 import com.duoc.notix.viewmodel.AuthViewModel
 
@@ -150,7 +152,7 @@ private fun camposPara(tipo: TipoCuenta): List<CampoDef> = when (tipo) {
     TipoCuenta.EMPRESA -> listOf(
         CampoDef("razon", "Nombre Empresa", "Comercial Demo SpA",
             validar = texto(3, "Ingresa el nombre de la empresa")),
-        runDef("rut", "RUT de la empresa", "76.111.111-K",
+        runDef("rut", "RUT de la empresa", "76.111.111-6",
             ayuda = "Ingresa el RUT de la empresa", etiqueta = "RUT"),
         CampoDef("giro", "Giro o actividad comercial", "Venta de insumos",
             validar = texto(3, "Ingresa el giro de la empresa.")),
@@ -201,14 +203,14 @@ fun CrearCuentaScreen(
 ) {
     var tipo by rememberSaveable { mutableStateOf(TipoCuenta.PERSONA) }
     var valores by rememberSaveable { mutableStateOf<Map<String, String>>(emptyMap()) }
-    var pass by rememberSaveable { mutableStateOf("") }
-    var pass2 by rememberSaveable { mutableStateOf("") }
+    var pass by remember { mutableStateOf("") }
+    var pass2 by remember { mutableStateOf("") }
     var intento by rememberSaveable { mutableStateOf(false) }
     var registrado by rememberSaveable { mutableStateOf(false) }
 
     val campos = camposPara(tipo)
     val errores = campos.associate { it.key to it.validar(valores[it.key].orEmpty()) }
-    val errPass = if (pass.length < 6) "Debe tener al menos 6 caracteres." else null
+    val errPass = if (pass.isBlank() || pass.length !in 6..128) "Usa entre 6 y 128 caracteres; no solo espacios." else null
     val errPass2 = if (pass2.isEmpty() || pass2 != pass) "Las contraseñas no coinciden." else null
     val valido = errores.values.all { it == null } && errPass == null && errPass2 == null
 
@@ -250,6 +252,7 @@ fun CrearCuentaScreen(
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Serif
         )
+        Text("Simulación académica. Usa solo datos y contraseñas ficticios.", color = Gris, fontSize = 12.sp)
         // Tipo de cuenta (arriba, porque define qué campos se piden)
         Text(
             "Tipo de cuenta",
@@ -261,6 +264,7 @@ fun CrearCuentaScreen(
                 SegmentedButton(
                     selected = tipo == t,
                     onClick = {
+                        if (tipo != t) { valores = emptyMap(); pass = ""; pass2 = "" }
                         tipo = t
                         intento = false
                         registrado = false
@@ -315,8 +319,8 @@ fun CrearCuentaScreen(
         )
 
         // Registrarse
-// Registrarse
         Button(
+            enabled = !vm.cargando,
             onClick = {
                 intento = true
                 if (valido) vm.registrar(tipo, valores, pass) {
@@ -331,7 +335,7 @@ fun CrearCuentaScreen(
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Brand, contentColor = Color.White)
         ) {
-            Text("Registrarse", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(if (vm.cargando) "Creando cuenta…" else "Registrarse", fontSize = 17.sp, fontWeight = FontWeight.Bold)
         }
 
         vm.errorRegistro?.let {
@@ -393,7 +397,7 @@ fun CrearCuentaScreen(
             OutlinedTextField(
                 value = valor,
                 onValueChange = onCambio,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("registro_$titulo"),
                 singleLine = true,
                 shape = RoundedCornerShape(10.dp),
                 placeholder = if (placeholder.isNotEmpty()) ({

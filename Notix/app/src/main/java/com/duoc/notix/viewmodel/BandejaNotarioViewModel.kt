@@ -1,14 +1,16 @@
 package com.duoc.notix.viewmodel
 
 import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.duoc.notix.data.local.NotixDatabase
-import com.duoc.notix.data.model.EstadoTramite
-import com.duoc.notix.data.model.TipoCuenta
-import com.duoc.notix.data.model.Tramite
+import com.duoc.notix.model.EstadoTramite
+import com.duoc.notix.model.TipoCuenta
+import com.duoc.notix.model.Tramite
 import com.duoc.notix.repository.TramiteRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,6 +34,23 @@ class BandejaNotarioViewModel(
     private val repo: TramiteRepository,
     private val usuarioId: String
 ) : ViewModel() {
+
+    var procesando by androidx.compose.runtime.mutableStateOf(false)
+        private set
+    var error by androidx.compose.runtime.mutableStateOf<String?>(null)
+        private set
+
+    private fun evaluar(accion: suspend () -> Unit) {
+        if (procesando) return
+        procesando = true
+        error = null
+        viewModelScope.launch {
+            try { accion() }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) { error = e.message ?: "No se pudo evaluar la solicitud." }
+            finally { procesando = false }
+        }
+    }
 
     private val filtro = MutableStateFlow(FiltroTramites.TODOS)
 
@@ -63,10 +82,11 @@ class BandejaNotarioViewModel(
     }
 
     fun aprobarTramite(tramite: Tramite) {
-        viewModelScope.launch {
+        evaluar {
             repo.actualizarEstadoTramite(
                 tramite = tramite,
                 nuevoEstado = EstadoTramite.FINALIZADO,
+                notarioId = usuarioId, legibilidadConfirmada = true,
                 descripcionHistorial = "Aprobado y finalizado por el notario",
                 rolHistorial = TipoCuenta.NOTARIO,
                 mensajeAviso = "Tu trámite ${tramite.id} (${tramite.formato.nombre}) ha sido aprobado y finalizado por el notario."
@@ -75,10 +95,11 @@ class BandejaNotarioViewModel(
     }
 
     fun devolverTramite(tramite: Tramite, observacion: String) {
-        viewModelScope.launch {
+        evaluar {
             repo.actualizarEstadoTramite(
                 tramite = tramite,
                 nuevoEstado = EstadoTramite.DEVUELTO,
+                notarioId = usuarioId,
                 observacion = observacion,
                 descripcionHistorial = "Devuelto con observaciones: $observacion",
                 rolHistorial = TipoCuenta.NOTARIO,
@@ -92,7 +113,7 @@ class BandejaNotarioViewModel(
             initializer {
                 val db = NotixDatabase.getDatabase(context.applicationContext)
                 BandejaNotarioViewModel(
-                    TramiteRepository(db.tramiteDao(), db.avisoDao(), db.usuarioDao()),
+                    TramiteRepository(db.tramiteDao(), db.avisoDao(), db.usuarioDao(), db),
                     usuarioId
                 )
             }

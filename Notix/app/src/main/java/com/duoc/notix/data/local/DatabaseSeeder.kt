@@ -2,7 +2,9 @@ package com.duoc.notix.data.local
 
 import android.content.Context
 import android.util.Log
-import com.duoc.notix.data.model.*
+import androidx.room.withTransaction
+import com.duoc.notix.data.validation.PasswordStorage
+import com.duoc.notix.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
@@ -15,7 +17,8 @@ object DatabaseSeeder {
         val usuarioDao = db.usuarioDao()
         val avisoDao = db.avisoDao()
 
-        // crear/asegurar usuario demo persona
+        db.withTransaction {
+        // Las cuentas demo se crean una sola vez, sin sobrescribir datos existentes.
         val usuarioDemo = Usuario(
             id = "USR-001",
             tipoCuenta = TipoCuenta.PERSONA,
@@ -27,7 +30,8 @@ object DatabaseSeeder {
             telefono = "912345678",
             comuna = "Ñuñoa"
         )
-        usuarioDao.upsertUsuario(usuarioDemo.toEntity())
+        val crearDemo = usuarioDao.getUsuarioPorCorreo(usuarioDemo.correo) == null
+        if (crearDemo) usuarioDao.insertUsuario(usuarioDemo.copy(contrasena = PasswordStorage.guardar(usuarioDemo.contrasena)).toEntity())
 
         // crear/asegurar usuario demo notario
         val notarioDemo = Usuario(
@@ -42,12 +46,13 @@ object DatabaseSeeder {
             comuna = "Santiago",
             numeroNotaria = 1
         )
-        usuarioDao.upsertUsuario(notarioDemo.toEntity())
+        if (usuarioDao.getUsuarioPorCorreo(notarioDemo.correo) == null)
+            usuarioDao.insertUsuario(notarioDemo.copy(contrasena = PasswordStorage.guardar(notarioDemo.contrasena)).toEntity())
 
         val tramitesExistentes = tramiteDao.getTodosLosTramites().firstOrNull().orEmpty()
-        if (tramitesExistentes.isNotEmpty()) {
+        if (!crearDemo || tramitesExistentes.isNotEmpty()) {
             Log.d("DatabaseSeeder", "La base de datos ya contiene ${tramitesExistentes.size} trámites.")
-            return@withContext
+            return@withTransaction
         }
 
         tramitesDemo(usuarioDemo).forEach { t ->
@@ -97,6 +102,7 @@ object DatabaseSeeder {
         avisoDao.insertAviso(avisoDemo.toEntity())
 
         Log.d("DatabaseSeeder", "Base de datos inicializada correctamente con datos demo.")
+        }
     }
 
     private fun tramitesDemo(u: Usuario): List<Tramite> {

@@ -1,8 +1,6 @@
 package com.duoc.notix.ui.screens
 
-import android.content.Context
 import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -61,8 +59,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.duoc.notix.data.model.FormatoTramite
-import com.duoc.notix.data.model.TipoCuenta
+import com.duoc.notix.model.FormatoTramite
+import com.duoc.notix.model.TipoCuenta
 import com.duoc.notix.ui.components.notixTextFieldColors
 import com.duoc.notix.ui.theme.NotixColors
 import com.duoc.notix.viewmodel.CrearTramiteViewModel
@@ -74,22 +72,23 @@ fun CrearTramiteScreen(
     formato: FormatoTramite,
     onVolver: () -> Unit,
     onTramiteCreado: () -> Unit,
+    solicitudKey: String,
+    tramiteId: String? = null,
     vm: CrearTramiteViewModel = viewModel(
-        key = "${usuarioId}_${formato.id}",
-        factory = CrearTramiteViewModel.factory(LocalContext.current, usuarioId, formato)
+        key = "${usuarioId}_${formato.id}_$solicitudKey",
+        factory = CrearTramiteViewModel.factory(LocalContext.current, usuarioId, formato, tramiteId)
     )
 ) {
-    val context = LocalContext.current
-    var legibilidadConfirmada by remember { mutableStateOf(true) }
+    androidx.activity.compose.BackHandler(enabled = vm.uiState.guardando || vm.importando) {}
+    val legibilidadConfirmada = vm.firmaConfirmada
     var mostrarModalConfirmacion by remember { mutableStateOf(false) }
 
     // Selector nativo de archivos de Android
     val documentPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            val nombreArchivo = obtenerNombreArchivo(context, uri) ?: "documento_adjunto.pdf"
-            vm.onDocumentoAdjuntado(nombreArchivo)
+            vm.onDocumentoAdjuntado(uri)
         }
     }
 
@@ -106,7 +105,7 @@ fun CrearTramiteScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onVolver) {
+                    IconButton(onClick = onVolver, enabled = !vm.uiState.guardando && !vm.importando) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
@@ -237,7 +236,7 @@ fun CrearTramiteScreen(
 
             // Recurso Nativo Android: Adjuntar Documento
             Text(
-                "Documentación adjunta (Recurso Nativo)",
+                "Documento ficticio adjunto (máximo 5 MB)",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = NotixColors.Tinta,
@@ -245,7 +244,7 @@ fun CrearTramiteScreen(
             )
 
             Surface(
-                onClick = { documentPickerLauncher.launch("*/*") },
+                onClick = { documentPickerLauncher.launch(com.duoc.notix.data.local.DocumentosLocales.TIPOS) },
                 shape = RoundedCornerShape(12.dp),
                 color = Color.White,
                 border = BorderStroke(1.dp, NotixColors.Borde),
@@ -270,13 +269,13 @@ fun CrearTramiteScreen(
                             color = NotixColors.Tinta
                         )
                         Text(
-                            text = vm.documentoAdjuntoNombre ?: "Toca para abrir el selector de archivos nativo de Android",
+                            text = vm.documentoAdjuntoNombre ?: "PDF, TXT, PNG o JPEG ficticio; máximo 5 MB",
                             fontSize = 12.sp,
                             color = if (vm.documentoAdjuntoNombre != null) NotixColors.Brand else NotixColors.Gris
                         )
                     }
                     OutlinedButton(
-                        onClick = { documentPickerLauncher.launch("*/*") },
+                        onClick = { documentPickerLauncher.launch(com.duoc.notix.data.local.DocumentosLocales.TIPOS) },
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                     ) {
@@ -287,7 +286,7 @@ fun CrearTramiteScreen(
 
             // Confirmación de legibilidad
             Surface(
-                onClick = { legibilidadConfirmada = !legibilidadConfirmada },
+                onClick = { vm.onFirmaChange(!legibilidadConfirmada) },
                 shape = RoundedCornerShape(12.dp),
                 color = Color.White,
                 border = BorderStroke(1.dp, NotixColors.Borde),
@@ -304,7 +303,7 @@ fun CrearTramiteScreen(
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        "Declaro que los antecedentes proporcionados son verídicos y legibles.",
+                        "Confirmo los antecedentes ficticios y mi firma simulada (${formato.firmaRequerida.etiqueta}). Esta acción no tiene validez legal.",
                         fontSize = 13.sp,
                         color = NotixColors.Tinta
                     )
@@ -335,7 +334,7 @@ fun CrearTramiteScreen(
                         mostrarModalConfirmacion = true
                     }
                 },
-                enabled = !vm.uiState.guardando && legibilidadConfirmada,
+                enabled = !vm.uiState.guardando && !vm.importando && !vm.uiState.cargandoUsuario && !vm.uiState.guardadoExitoso,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
@@ -349,7 +348,7 @@ fun CrearTramiteScreen(
                     )
                 } else {
                     Text(
-                        "Revisar y enviar solicitud",
+                        if (tramiteId != null) "Revisar y reenviar corrección" else "Revisar y enviar solicitud",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -395,7 +394,7 @@ fun CrearTramiteScreen(
                                 Text("• En representación de: ${vm.actuaEnNombreDe}", fontSize = 13.sp, color = NotixColors.Tinta)
                             }
                             Text(
-                                "• Archivo adjunto: ${vm.documentoAdjuntoNombre ?: "${formato.nombre.lowercase().replace(" ", "_")}_solicitud.pdf"}",
+                                "• Archivo adjunto: ${vm.documentoAdjuntoNombre ?: "Sin adjunto"}",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = NotixColors.Brand
@@ -429,16 +428,4 @@ fun CrearTramiteScreen(
             }
         )
     }
-}
-
-private fun obtenerNombreArchivo(context: Context, uri: Uri): String? {
-    if (uri.scheme == "content") {
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (nameIndex != -1) return cursor.getString(nameIndex)
-            }
-        }
-    }
-    return uri.path?.substringAfterLast('/')
 }

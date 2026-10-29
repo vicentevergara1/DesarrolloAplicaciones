@@ -1,7 +1,14 @@
 package com.duoc.notix
 
 import android.os.Bundle
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
+import com.duoc.notix.model.catalogoFormatos
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
@@ -10,8 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.duoc.notix.data.local.DatabaseSeeder
-import com.duoc.notix.data.model.FormatoTramite
-import com.duoc.notix.data.model.TipoCuenta
+import com.duoc.notix.model.TipoCuenta
 import com.duoc.notix.ui.screens.AvisosScreen
 import com.duoc.notix.ui.screens.BandejaNotarioScreen
 import com.duoc.notix.ui.screens.CatalogoFormatosScreen
@@ -20,6 +26,7 @@ import com.duoc.notix.ui.screens.CrearTramiteScreen
 import com.duoc.notix.ui.screens.LoginScreen
 import com.duoc.notix.ui.screens.MisTramitesScreen
 import com.duoc.notix.ui.screens.WelcomeScreen
+import com.duoc.notix.ui.screens.PerfilScreen
 import com.duoc.notix.ui.theme.NotixTheme
 
 enum class Pantalla {
@@ -30,22 +37,71 @@ enum class Pantalla {
     CatalogoFormatos,
     CrearTramite,
     BandejaNotario,
-    Avisos
+    Avisos,
+    Perfil
 }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val sesion = androidx.lifecycle.ViewModelProvider(this)[com.duoc.notix.viewmodel.SesionViewModel::class.java]
         setContent {
             NotixTheme {
-                LaunchedEffect(Unit) {
-                    DatabaseSeeder.seedIfEmpty(applicationContext)
+                var inicializada by remember { mutableStateOf(false) }
+                var errorInicio by remember { mutableStateOf<String?>(null) }
+                var intentoInicio by remember { mutableStateOf(0) }
+                LaunchedEffect(intentoInicio) {
+                    try { DatabaseSeeder.seedIfEmpty(applicationContext); inicializada = true; errorInicio = null }
+                    catch (e: kotlinx.coroutines.CancellationException) { throw e }
+                    catch (_: Exception) { errorInicio = "No se pudieron cargar los datos locales." }
+                }
+                if (!inicializada) {
+                    androidx.compose.foundation.layout.Column(Modifier.padding(24.dp)) {
+                        androidx.compose.material3.Text(errorInicio ?: "Preparando Notix…")
+                        if (errorInicio != null) androidx.compose.material3.TextButton(onClick = { intentoInicio++ }) {
+                            androidx.compose.material3.Text("Reintentar")
+                        }
+                    }
+                    return@NotixTheme
                 }
 
                 var pantallaActual by rememberSaveable { mutableStateOf(Pantalla.Welcome) }
-                var usuarioId by rememberSaveable { mutableStateOf("USR-001") }
-                var formatoSeleccionado by androidx.compose.runtime.remember { mutableStateOf<FormatoTramite?>(null) }
+                var usuarioId by sesion::usuarioId
+                var formatoId by rememberSaveable { mutableStateOf<String?>(null) }
+                val formatoSeleccionado = catalogoFormatos.find { it.id == formatoId }
+                var tramiteCorreccionId by rememberSaveable { mutableStateOf<String?>(null) }
+                var solicitudKey by rememberSaveable { mutableStateOf("") }
+                val sesionKey = sesion.generacion
+                // Al cerrar la sesión se destruyen los ViewModels y sus borradores privados.
+                val sessionStore = sesion.pantallas
+                val owner = remember(sessionStore) {
+                    object : androidx.lifecycle.ViewModelStoreOwner, androidx.lifecycle.HasDefaultViewModelProviderFactory {
+                        override val viewModelStore = sessionStore
+                        override val defaultViewModelProviderFactory get() = this@MainActivity.defaultViewModelProviderFactory
+                        override val defaultViewModelCreationExtras get() = this@MainActivity.defaultViewModelCreationExtras
+                    }
+                }
+                val cerrarSesion = {
+                    sesion.cerrar()
+                    formatoId = null
+                    tramiteCorreccionId = null
+                    pantallaActual = Pantalla.Login
+                }
+                if (usuarioId.isEmpty() && pantallaActual !in listOf(Pantalla.Welcome, Pantalla.Login, Pantalla.CrearCuenta)) {
+                    LaunchedEffect(Unit) { pantallaActual = Pantalla.Welcome }
+                    return@NotixTheme
+                }
+                BackHandler(enabled = pantallaActual != Pantalla.Welcome) {
+                    pantallaActual = when (pantallaActual) {
+                        Pantalla.Login, Pantalla.CrearCuenta -> Pantalla.Welcome
+                        Pantalla.CrearTramite -> { sessionStore.clear(); Pantalla.CatalogoFormatos }
+                        Pantalla.CatalogoFormatos, Pantalla.Avisos, Pantalla.Perfil -> Pantalla.MisTramites
+                        else -> pantallaActual
+                    }
+                }
+                androidx.compose.runtime.CompositionLocalProvider(androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner provides owner) {
+                key(sesionKey) {
 
                 when (pantallaActual) {
                     Pantalla.Welcome -> WelcomeScreen(
@@ -78,12 +134,21 @@ class MainActivity : ComponentActivity() {
                     Pantalla.MisTramites -> MisTramitesScreen(
                         usuarioId = usuarioId,
                         onNuevoTramite = { pantallaActual = Pantalla.CatalogoFormatos },
-                        onVerTramite = { id -> /* Detalle modal en MisTramitesScreen */ },
+                        onPerfil = { pantallaActual = Pantalla.Perfil },
+                        onCorregir = { tramite ->
+                            tramiteCorreccionId = tramite.id
+                            formatoId = tramite.formato.id
+                            solicitudKey = java.util.UUID.randomUUID().toString()
+                            pantallaActual = Pantalla.CrearTramite
+                        },
+
                         onAvisos = { pantallaActual = Pantalla.Avisos }
                     )
                     Pantalla.CatalogoFormatos -> CatalogoFormatosScreen(
                         onSeleccionarFormato = { formato ->
-                            formatoSeleccionado = formato
+                            formatoId = formato.id
+                            tramiteCorreccionId = null
+                            solicitudKey = java.util.UUID.randomUUID().toString()
                             pantallaActual = Pantalla.CrearTramite
                         },
                         onVolver = { pantallaActual = Pantalla.MisTramites }
@@ -93,21 +158,27 @@ class MainActivity : ComponentActivity() {
                             CrearTramiteScreen(
                                 usuarioId = usuarioId,
                                 formato = formato,
-                                onVolver = { pantallaActual = Pantalla.CatalogoFormatos },
-                                onTramiteCreado = { pantallaActual = Pantalla.MisTramites }
+                                solicitudKey = solicitudKey, tramiteId = tramiteCorreccionId,
+                                onVolver = { sessionStore.clear(); pantallaActual = Pantalla.CatalogoFormatos },
+                                onTramiteCreado = { sessionStore.clear(); pantallaActual = Pantalla.MisTramites }
                             )
                         } ?: run {
-                            pantallaActual = Pantalla.CatalogoFormatos
+                            LaunchedEffect(Unit) { pantallaActual = Pantalla.CatalogoFormatos }
                         }
                     }
                     Pantalla.BandejaNotario -> BandejaNotarioScreen(
                         usuarioId = usuarioId,
-                        onCerrarSesion = { pantallaActual = Pantalla.Login }
+                        onCerrarSesion = cerrarSesion
                     )
                     Pantalla.Avisos -> AvisosScreen(
                         usuarioId = usuarioId,
-                        onVolver = { pantallaActual = Pantalla.MisTramites }
+                        onVolver = { pantallaActual = Pantalla.MisTramites },
+                        onPerfil = { pantallaActual = Pantalla.Perfil }
                     )
+                    Pantalla.Perfil -> PerfilScreen(usuarioId = usuarioId,
+                        onVolver = { pantallaActual = Pantalla.MisTramites }, onCerrarSesion = cerrarSesion)
+                }
+                }
                 }
             }
         }

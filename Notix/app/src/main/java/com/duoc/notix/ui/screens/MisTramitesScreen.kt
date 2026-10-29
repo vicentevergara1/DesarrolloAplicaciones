@@ -11,6 +11,8 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,8 +58,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.duoc.notix.data.model.EstadoTramite
-import com.duoc.notix.data.model.Tramite
+import com.duoc.notix.model.EstadoTramite
+import com.duoc.notix.model.Tramite
 import com.duoc.notix.ui.components.BarraInferiorPersona
 import com.duoc.notix.ui.components.EstadoChip
 import com.duoc.notix.ui.components.TramiteCard
@@ -72,6 +74,8 @@ fun MisTramitesScreen(
     onNuevoTramite: () -> Unit = {},
     onVerTramite: (String) -> Unit = {},
     onAvisos: () -> Unit = {},
+    onPerfil: () -> Unit = {},
+    onCorregir: (Tramite) -> Unit = {},
     vm: MisTramitesViewModel = viewModel(
         key = usuarioId,
         factory = MisTramitesViewModel.factory(LocalContext.current, usuarioId)
@@ -92,12 +96,13 @@ fun MisTramitesScreen(
                 onVerTramite(id)
             }
         },
-        onAvisos = onAvisos
+        onAvisos = onAvisos, onPerfil = onPerfil
     )
 
     tramiteDetalle?.let { tramite ->
         DetalleClienteDialog(
             tramite = tramite,
+            onCorregir = { tramiteDetalle = null; onCorregir(tramite) },
             onDismiss = { tramiteDetalle = null }
         )
     }
@@ -109,14 +114,15 @@ fun MisTramitesContent(
     onFiltro: (FiltroTramites) -> Unit,
     onNuevoTramite: () -> Unit,
     onVerTramite: (String) -> Unit,
-    onAvisos: () -> Unit
+    onAvisos: () -> Unit,
+    onPerfil: () -> Unit
 ) {
     Scaffold(
         containerColor = NotixColors.Fondo,
         bottomBar = {
             BarraInferiorPersona(
                 seleccionado = 0,
-                onInicio = {}, onTramites = {}, onAvisos = onAvisos, onPerfil = {}
+                onInicio = { onFiltro(FiltroTramites.TODOS) }, onTramites = { onFiltro(FiltroTramites.TODOS) }, onAvisos = onAvisos, onPerfil = onPerfil
             )
         }
     ) { padding ->
@@ -319,8 +325,11 @@ private fun AlertaBanner(tramite: Tramite, onClick: () -> Unit) {
 @Composable
 private fun DetalleClienteDialog(
     tramite: Tramite,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onCorregir: () -> Unit
 ) {
+    val context = LocalContext.current
+    var errorDocumento by remember { mutableStateOf<String?>(null) }
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Color.White,
@@ -340,7 +349,7 @@ private fun DetalleClienteDialog(
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     tramite.formato.nombre,
                     fontSize = 20.sp,
@@ -382,6 +391,7 @@ private fun DetalleClienteDialog(
                     }
                 }
 
+                Text("Firma: ${tramite.tipoFirma.etiqueta} (${if (tramite.firmaConfirmada) "simulada y confirmada" else "demostración anterior"})", fontSize = 13.sp)
                 Text("Antecedentes del trámite:", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NotixColors.Tinta)
                 Text("• Solicitante: ${tramite.antecedentes.nombreCompleto}", fontSize = 13.sp, color = NotixColors.Tinta)
                 Text("• RUN: ${tramite.antecedentes.documentoIdentidad}", fontSize = 13.sp, color = NotixColors.Tinta)
@@ -391,6 +401,11 @@ private fun DetalleClienteDialog(
                     Text("• En representación de: $it", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = NotixColors.Tinta)
                 }
 
+                Text("Documentos adjuntos:", fontWeight = FontWeight.Bold)
+                tramite.documentos.forEach { doc ->
+                    androidx.compose.material3.TextButton(onClick = { errorDocumento = com.duoc.notix.data.local.abrirDocumento(context, doc) }) { Text(doc.nombre) }
+                }
+                errorDocumento?.let { Text(it, color = NotixColors.AlertaTexto) }
                 if (tramite.historial.isNotEmpty()) {
                     Spacer(Modifier.height(4.dp))
                     Text("Historial del trámite:", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NotixColors.Tinta)
@@ -399,6 +414,9 @@ private fun DetalleClienteDialog(
                     }
                 }
             }
+        },
+        dismissButton = {
+            if (tramite.estado == EstadoTramite.DEVUELTO) androidx.compose.material3.TextButton(onClick = onCorregir) { Text("Corregir y reenviar") }
         },
         confirmButton = {
             Button(
