@@ -66,8 +66,7 @@ interface UsuarioDao {
     @Query("UPDATE usuarios SET contrasena = :clave WHERE id = :id")
     suspend fun actualizarClave(id: String, clave: String)
 
-
-    @Insert(onConflict = OnConflictStrategy.ABORT)      // falla si el correo o el id ya existen
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertUsuario(usuario: UsuarioEntity)
 
     @Query("SELECT * FROM usuarios WHERE correo = :correo LIMIT 1")

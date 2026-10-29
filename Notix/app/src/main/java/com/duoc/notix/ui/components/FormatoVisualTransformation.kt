@@ -7,7 +7,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import com.duoc.notix.util.formatearDocumento
 import com.duoc.notix.util.formatearRut
 
-/** Muestra el valor formateado y mantiene el cursor en su lugar. Sirve para cualquier formato que solo agregue '.' y '-'. */
 open class FormatoVisualTransformation(
     private val formatear: (String) -> String
 ) : VisualTransformation {

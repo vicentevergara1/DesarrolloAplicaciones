@@ -1,30 +1,31 @@
 package com.duoc.notix.model
 
 data class Tramite(
-    val id: String,                          // TX-2026-0043
-    val formato: FormatoTramite,             // Poder simple, etc.
-    val solicitanteId: String,               // id del Usuario que lo creó
-    val solicitanteNombre: String,           // "Ana Demo"
-    val actuaEnNombreDe: String? = null,     // razón social si lo crea una Empresa
+    val id: String,
+    val formato: FormatoTramite,
+    val solicitanteId: String,
+    val solicitanteNombre: String,
+    val actuaEnNombreDe: String? = null,
     val tipoFirma: TipoFirma,
     val estado: EstadoTramite,
     val documentos: List<Documento>,
     val antecedentes: Antecedentes,
-    val observacion: String? = null,         // texto del notario al devolver
-    val legibilidadConfirmada: Boolean = false, // el notario la marca antes de aprobar
+    val observacion: String? = null,
+    val legibilidadConfirmada: Boolean = false,
     val historial: List<EventoHistorial>,
-    val firmaConfirmada: Boolean = false
+    val firmaConfirmada: Boolean = false,
+    val textoSolicitud: String = ""
 )
 
 data class Antecedentes(
     val nombreCompleto: String,
-    val documentoIdentidad: String,          // ficticio: DEMO-0001
+    val documentoIdentidad: String,
     val correoContacto: String,
-    val comuna: String                       // obligatoria (la regla del mapa)
+    val comuna: String
 )
 
 data class Documento(
-    val nombre: String,                      // poder_demo.pdf
+    val nombre: String,
     val tamanoKb: Int,
     val estado: EstadoDocumento = EstadoDocumento.ACEPTADO,
     val rutaLocal: String? = null,
@@ -33,11 +34,11 @@ data class Documento(
 
 enum class EstadoDocumento(val etiqueta: String) {
     ACEPTADO("Aceptado"),
-    OBSERVADO("Observado")                   // el anexo ilegible del ejemplo
+    OBSERVADO("Observado")
 }
 
 data class EventoHistorial(
-    val descripcion: String,                 // "Enviado al notario"
-    val fechaHora: String,                   // simulada: "28/10/2026 14:30"
-    val rol: TipoCuenta                      // quién hizo el cambio
+    val descripcion: String,
+    val fechaHora: String,
+    val rol: TipoCuenta
 )

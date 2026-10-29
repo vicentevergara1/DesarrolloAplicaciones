@@ -7,7 +7,6 @@ data class FormatoTramite(
     val firmaRequerida: TipoFirma
 )
 
-// Subconjunto pequeño de los +60 formatos del caso (datos ficticios)
 val catalogoFormatos = listOf(
     FormatoTramite("F01", "Poder simple", "Poderes", TipoFirma.SIMPLE),
     FormatoTramite("F02", "Declaración jurada simple", "Declaraciones", TipoFirma.AVANZADA),

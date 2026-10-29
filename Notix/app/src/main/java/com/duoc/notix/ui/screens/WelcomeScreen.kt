@@ -21,7 +21,7 @@ fun WelcomeScreen(
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF3F6F4) // Variable --bg de styles.css
+        color = Color(0xFFF3F6F4)
     ) {
         Column(
             modifier = Modifier
@@ -38,12 +38,11 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Nombre de la App
             Text(
                 text = "NotariaX",
                 fontSize = 40.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F4C45) // Variable --green
+                color = Color(0xFF0F4C45)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -51,12 +50,11 @@ fun WelcomeScreen(
             Text(
                 text = "Trámites notariales simples y digitales",
                 fontSize = 15.sp,
-                color = Color(0xFF4A615C) // Variable --ink-soft
+                color = Color(0xFF4A615C)
             )
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Botón Iniciar Sesión
             Button(
                 onClick = onNavigateToLogin,
                 modifier = Modifier
@@ -76,7 +74,6 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Botón Crear Cuenta
             OutlinedButton(
                 onClick = onNavigateToRegister,
                 modifier = Modifier

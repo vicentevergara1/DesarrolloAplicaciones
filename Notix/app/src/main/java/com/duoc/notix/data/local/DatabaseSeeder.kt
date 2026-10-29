@@ -18,7 +18,7 @@ object DatabaseSeeder {
         val avisoDao = db.avisoDao()
 
         db.withTransaction {
-        // Las cuentas demo se crean una sola vez, sin sobrescribir datos existentes.
+
         val usuarioDemo = Usuario(
             id = "USR-001",
             tipoCuenta = TipoCuenta.PERSONA,
@@ -33,7 +33,6 @@ object DatabaseSeeder {
         val crearDemo = usuarioDao.getUsuarioPorCorreo(usuarioDemo.correo) == null
         if (crearDemo) usuarioDao.insertUsuario(usuarioDemo.copy(contrasena = PasswordStorage.guardar(usuarioDemo.contrasena)).toEntity())
 
-        // crear/asegurar usuario demo notario
         val notarioDemo = Usuario(
             id = "USR-NOTARIO-01",
             tipoCuenta = TipoCuenta.NOTARIO,
@@ -60,10 +59,9 @@ object DatabaseSeeder {
             tramiteDao.insertTramiteCompleto(te, de, he)
         }
 
-
-        // Crear trámite demo
         val tramiteDemo = Tramite(
             id = "TX-2026-0001",
+            textoSolicitud = "Solicito un poder simple ficticio para representar a una persona de demostración.",
             formato = FormatoTramite("F01", "Poder simple", "Poderes", TipoFirma.SIMPLE),
             solicitanteId = usuarioDemo.id,
             solicitanteNombre = usuarioDemo.nombreCompleto,
@@ -90,7 +88,6 @@ object DatabaseSeeder {
         val (tramiteEntity, docEntities, histEntities) = tramiteDemo.toEntities()
         tramiteDao.insertTramiteCompleto(tramiteEntity, docEntities, histEntities)
 
-        // Crear aviso demo
         val avisoDemo = Aviso(
             id = "AVS-001",
             destinatarioId = usuarioDemo.id,
@@ -110,6 +107,7 @@ object DatabaseSeeder {
         return listOf(
             Tramite(
                 id = "TX-2026-0042",
+                textoSolicitud = "Solicito un poder simple de demostración. Debo corregir la comuna y revisar los antecedentes observados.",
                 formato = FormatoTramite("F01", "Poder simple", "Poderes", TipoFirma.SIMPLE),
                 solicitanteId = u.id, solicitanteNombre = u.nombreCompleto,
                 tipoFirma = TipoFirma.SIMPLE, estado = EstadoTramite.DEVUELTO,
@@ -126,6 +124,7 @@ object DatabaseSeeder {
             ),
             Tramite(
                 id = "TX-2026-0039",
+                textoSolicitud = "Solicito una declaración jurada ficticia para dejar constancia de los antecedentes de demostración.",
                 formato = FormatoTramite("F02", "Declaración jurada simple", "Declaraciones", TipoFirma.AVANZADA),
                 solicitanteId = u.id, solicitanteNombre = u.nombreCompleto,
                 tipoFirma = TipoFirma.AVANZADA, estado = EstadoTramite.ENVIADO,
@@ -135,6 +134,7 @@ object DatabaseSeeder {
             ),
             Tramite(
                 id = "TX-2026-0031",
+                textoSolicitud = "Solicito una autorización de viaje ficticia para la demostración académica de Notix.",
                 formato = FormatoTramite("F03", "Autorización de viaje", "Familia", TipoFirma.NOTARIADA),
                 solicitanteId = u.id, solicitanteNombre = u.nombreCompleto,
                 tipoFirma = TipoFirma.NOTARIADA, estado = EstadoTramite.FINALIZADO,
@@ -147,6 +147,5 @@ object DatabaseSeeder {
             )
         )
     }
-
 
 }

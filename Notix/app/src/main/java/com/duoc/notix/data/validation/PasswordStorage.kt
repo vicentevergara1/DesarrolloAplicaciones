@@ -5,7 +5,6 @@ import java.security.SecureRandom
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 
-/** Guarda sal y derivación, nunca la clave; conserva el nombre de columna para migrar v2. */
 object PasswordStorage {
     private const val PREFIX = "pbkdf2:"
     fun esHash(valor: String) = valor.startsWith(PREFIX)

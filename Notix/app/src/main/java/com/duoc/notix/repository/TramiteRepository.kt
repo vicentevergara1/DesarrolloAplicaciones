@@ -31,7 +31,6 @@ class TramiteRepository(
     private fun aviso(t: Tramite, mensaje: String) = AvisoEntity(
         "AVS-${UUID.randomUUID()}", t.solicitanteId, t.id, mensaje, fechaHoraActual())
 
-    /** El creador debe ser la cuenta autenticada y los antecedentes deben estar completos. */
     suspend fun crearTramite(tramite: Tramite, usuarioId: String) = db.withTransaction {
         val usuario = actor(usuarioId)
         require(usuario.tipoCuenta != TipoCuenta.NOTARIO && tramite.solicitanteId == usuario.id)
@@ -60,7 +59,8 @@ class TramiteRepository(
         require(t.antecedentes.nombreCompleto.trim().length >= 3 && t.antecedentes.comuna.trim().length >= 3)
         require(com.duoc.notix.data.validation.RutValidator.validar(t.antecedentes.documentoIdentidad) == null)
         require(android.util.Patterns.EMAIL_ADDRESS.matcher(t.antecedentes.correoContacto).matches())
-        require(t.documentos.isNotEmpty() && t.documentos.all { it.rutaLocal != null && it.tamanoKb in 1..5120 }) { "Adjunta un documento ficticio válido." }
+        com.duoc.notix.data.validation.SolicitudValidator.validarTexto(t.textoSolicitud)?.let { throw IllegalArgumentException(it) }
+        require(t.documentos.all { it.rutaLocal != null && it.tamanoKb in 1..5120 }) { "Revisa el documento de respaldo ficticio." }
         require(t.firmaConfirmada) { "Confirma la firma simulada." }
     }
 

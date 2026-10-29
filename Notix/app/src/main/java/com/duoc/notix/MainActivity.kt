@@ -73,7 +73,7 @@ class MainActivity : ComponentActivity() {
                 var tramiteCorreccionId by rememberSaveable { mutableStateOf<String?>(null) }
                 var solicitudKey by rememberSaveable { mutableStateOf("") }
                 val sesionKey = sesion.generacion
-                // Al cerrar la sesión se destruyen los ViewModels y sus borradores privados.
+
                 val sessionStore = sesion.pantallas
                 val owner = remember(sessionStore) {
                     object : androidx.lifecycle.ViewModelStoreOwner, androidx.lifecycle.HasDefaultViewModelProviderFactory {

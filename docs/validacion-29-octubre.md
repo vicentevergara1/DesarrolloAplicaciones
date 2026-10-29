@@ -1,3 +1,5 @@
+> Informe histórico de la versión anterior. Las reglas actuales de RUT y solicitud están en [validacion-texto-rut.md](validacion-texto-rut.md).
+
 # Verificación — 29/10/2026
 
 ## Base revisada

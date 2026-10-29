@@ -57,7 +57,6 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var verClave by remember { mutableStateOf(false) }
 
-    // Lo único que hace el botón: entregarle al ViewModel lo que escribió el usuario
     fun ingresar() = vm.ingresar(perfil, email, password, onLoginSuccess)
 
     Surface(modifier = Modifier.fillMaxSize(), color = NotixColors.Fondo) {
@@ -88,7 +87,6 @@ fun LoginScreen(
                 )
             }
 
-            // Selector Persona | Empresa | Notario
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -159,14 +157,13 @@ fun LoginScreen(
                 Text("Ingresar", fontWeight = FontWeight.SemiBold)
             }
 
-            // Mensaje de error que viene del ViewModel (cuenta inexistente, clave incorrecta, etc.)
             vm.error?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
             }
 
             OutlinedButton(
                 onClick = ::ingresar,
-                enabled = !vm.cargando, // simulación: mismo resultado que Ingresar
+                enabled = !vm.cargando,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(10.dp),
                 border = BorderStroke(1.dp, NotixColors.Borde)

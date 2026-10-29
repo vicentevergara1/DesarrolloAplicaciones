@@ -13,10 +13,11 @@ class RutValidatorTest {
             assertNull(it, RutValidator.validar(it))
         }
     }
-    @Test fun avisaElVerificadorEsperadoAlEditar() {
-        assertTrue(RutValidator.validar("22.312.422-1")!!.contains("4"))
-        assertTrue(RutValidator.validar("22.312.422-K")!!.contains("4"))
-        assertNull(RutValidator.validar("22.312.422-4"))
+    @Test fun aceptaCualquierVerificadorDelCeroAlNueveOK() {
+        "0123456789Kk".forEach { dv ->
+            assertNull(RutValidator.validar("22.312.422-$dv"))
+            assertNull(RutValidator.validar("1234567$dv"))
+        }
     }
     @Test fun rechazaCuerposInvalidos() {
         listOf("", "1", "00000000", "1111111111", "123K5678", "1234567X", "１２３４５６７８").forEach {

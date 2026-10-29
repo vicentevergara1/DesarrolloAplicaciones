@@ -13,6 +13,10 @@ La versión conserva la estructura del ZIP actualizado:
 
 La pantalla de registro mantiene la definición declarativa y las validaciones visuales del proyecto recibido. El repositorio comprueba además nombre, correo, contraseña y RUT antes de persistir. No hay llamadas a Room desde los cuerpos de las pantallas. Las fábricas construyen sus dependencias.
 
+## Texto y documentos de respaldo
+
+Cada solicitud nueva contiene texto obligatorio de 10 a 5000 caracteres. Se puede enviar sin documentos; si se selecciona un respaldo se mantienen las restricciones de tipo y tamaño. El solicitante puede quitarlo antes de enviar o al corregir. `textoSolicitud` vive en el modelo, entidad y mapeos, y el repositorio y ViewModel validan la misma regla mediante `SolicitudValidator`. El texto aparece en confirmación, detalle y revisión.
+
 ## Flujo de trámites
 
 ~~~text
@@ -31,9 +35,11 @@ La firma se representa por una confirmación explícita, su tipo simulado y el e
 
 ## Persistencia
 
-Base `notix_database`, versión **3**. Tablas: `usuarios`, `tramites`, `documentos`, `historial_eventos`, `avisos`. Las claves foráneas de documentos/historial apuntan al trámite. Los IDs de nuevos trámites y avisos usan UUID; un ID repetido no reemplaza la fila existente.
+Base `notix_database`, versión **4**. Tablas: `usuarios`, `tramites`, `documentos`, `historial_eventos`, `avisos`. Las claves foráneas de documentos/historial apuntan al trámite. Los IDs de nuevos trámites y avisos usan UUID; un ID repetido no reemplaza la fila existente.
 
-La migración **2 → 3** añade `rutaLocal` y `mime` a documentos y `firmaConfirmada` a trámites. No borra usuarios, documentos, historial, avisos ni trámites. El esquema 2 se reconstruyó y contrastó con el DDL generado por Room desde el ZIP original; el esquema 3 se exporta durante KSP. No se configura migración destructiva. No se afirma compatibilidad con esquemas históricos distintos a la versión 2 de este ZIP.
+La migración **3 → 4** añade `textoSolicitud TEXT NOT NULL DEFAULT ''` a trámites. Conserva cuentas, estados, historial, avisos y respaldos; los casos anteriores quedan sin texto y la UI lo indica. Al corregirlos se exige completar el contenido. Se prueban la actualización desde versión 2 y desde versión 3, y el guardado del texto al reabrir la base.
+
+La migración **2 → 3** añade `rutaLocal` y `mime` a documentos y `firmaConfirmada` a trámites. No borra usuarios, documentos, historial, avisos ni trámites. El esquema 2 se reconstruyó y contrastó con el DDL generado por Room desde el ZIP original; el esquema 3 se exporta durante KSP. No se configura migración destructiva. La cadena soporta las versiones 2 y 3 previas. No se afirma compatibilidad con esquemas históricos no documentados.
 
 Las contraseñas nuevas se guardan como PBKDF2-HMAC-SHA1, 210.000 iteraciones, sal aleatoria de 16 bytes y derivación de 256 bits, compatible con API 24. Una clave en texto plano de la versión 2 se convierte después de un acceso correcto. El usuario entregado a la UI no incluye esa clave. El seeder crea los usuarios demo solo si no existen y no cambia sus contraseñas en cada apertura.
 
@@ -51,7 +57,7 @@ El catálogo guarda el identificador de formato para reconstruirlo al rotar. Cad
 
 - Room emite `Flow` y Compose observa el estado del ViewModel; al cambiar la base se actualizan listados y avisos.
 - Las transacciones impiden guardar un estado nuevo sin su historial o aviso correspondiente.
-- El RUT usa módulo 11: la K corresponde solo al resultado 10, nunca es un verificador universal.
+- El RUT ficticio se valida solo por formato. Cualquier último carácter 0–9, K o k es válido; no se calcula el verificador matemático. La regla aplica a Persona, Empresa, representante, Notario y solicitudes.
 - La copia privada conserva un adjunto después de perder el permiso temporal del selector.
 - Los avisos son internos, no notificaciones del sistema. El recurso nativo exigido se cubre mediante el selector y visor de archivos.
 - El catálogo contiene tres formatos ficticios. El prototipo HTML y su pago/agendamiento no forman parte de la aplicación Android.

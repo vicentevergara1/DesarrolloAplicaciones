@@ -1,6 +1,5 @@
 package com.duoc.notix.util
 
-/** Dígitos, y una K solo como último carácter (después de 7 u 8 dígitos). Máx. 9 caracteres. */
 fun limpiarRut(raw: String): String {
     val sb = StringBuilder()
     for (c in raw.uppercase()) {
@@ -13,7 +12,6 @@ fun limpiarRut(raw: String): String {
     return sb.toString()
 }
 
-/** "218636" -> "21.863-6". El último carácter siempre es el dígito verificador. */
 fun formatearRut(raw: String): String {
     val l = limpiarRut(raw)
     if (l.length <= 1) return l

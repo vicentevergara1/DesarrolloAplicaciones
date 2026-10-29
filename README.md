@@ -1,6 +1,6 @@
 # Notix — NotariaX, DSY1105
 
-Aplicación académica nativa Android en Kotlin, Compose y MVVM. Esta revisión parte del ZIP actualizado enviado el 29/10/2026 y conserva sus pantallas, catálogo, perfiles y datos de demostración. El prototipo HTML se mantiene como referencia visual.
+Aplicación académica nativa Android en Kotlin, Compose y MVVM. Esta revisión parte de `Benja-ignacio/caso-NotariaX`, rama `main`, commit `e50128f2ccd2d6cc8bac923d9316f935fe238ded`, consultado con autorización del usuario el 29/10/2026 y conserva sus pantallas, catálogo, perfiles y datos de demostración. El prototipo HTML se mantiene como referencia visual.
 
 **Solo datos ficticios.** Los trámites, firmas, biometría y revisión notarial son simulaciones locales sin validez legal. No existe un servidor ni sincronización entre dispositivos: la demostración de solicitante y notario se realiza en la misma instalación, cambiando de cuenta.
 
@@ -30,23 +30,25 @@ Se crean automáticamente al abrir la aplicación por primera vez. Son credencia
 | Persona | ana.demo@notariax.test | demo123 |
 | Notario | notario.demo@notariax.test | notario123 |
 
-Para Empresa, registrar una cuenta ficticia. El ejemplo de RUT de empresa **76.111.111-6** tiene verificador numérico; también se aceptan verificadores 0 y K cuando corresponden. Para el ejemplo **22.312.422**, el verificador correcto es **4**.
+Para Empresa, registrar una cuenta ficticia. El RUT ficticio se valida solo por formato: 7 u 8 dígitos de cuerpo y un verificador **0–9 o K/k**, con o sin puntos y guion. Por petición del equipo, cualquier verificador de ese conjunto se acepta y no se calcula módulo 11. Esto no acredita la validez de un RUT real.
 
 ## Funciones y correcciones
 
 - Registro y login por perfil con Room, correo normalizado y prevención de envíos repetidos. Las contraseñas nuevas se derivan con PBKDF2 y sal aleatoria; las antiguas se actualizan al ingresar correctamente. Las cuentas demo no se sobrescriben al iniciar.
-- Catálogo y solicitudes con antecedentes validados y confirmación explícita de firma simulada. No se inventan adjuntos ni tamaños.
+- Catálogo y solicitudes con antecedentes validados, **texto obligatorio de 10 a 5000 caracteres** y confirmación explícita de firma simulada. El documento es un **respaldo opcional**: se puede crear, corregir y reenviar una solicitud solo con texto.
 - Selector nativo para PDF, TXT, PNG y JPEG ficticios, máximo 5 MB. El archivo se copia al almacenamiento privado y puede abrirse desde el detalle o la revisión mediante FileProvider.
 - Bandeja del notario: devolver con un motivo obligatorio o aprobar tras confirmar la legibilidad. Los trámites devueltos y finalizados no pueden evaluarse de nuevo sin reenvío.
 - Corrección y reenvío del mismo trámite por su solicitante, conservando historial y generando avisos.
 - Estado, historial y aviso se guardan en una transacción. Los IDs evitan colisiones y los reenvíos no duplican documentos.
 - Perfil y cierre de sesión para Persona/Empresa; navegación atrás y selección de formato conservada al rotar. La sesión queda en memoria y se elimina al cerrar el proceso.
-- Migración Room **2 → 3** sin borrado de datos. Los adjuntos antiguos que solo contenían metadatos se conservan y se avisa al abrirlos; se deben reemplazar al corregir un trámite.
+- El texto se guarda en Room y aparece completo en el resumen, el detalle del solicitante y la revisión del notario. Puede editarse al corregir un trámite devuelto.
+- Migraciones Room **2 → 3 → 4** sin borrado de datos. Las solicitudes anteriores conservan sus datos y muestran un aviso si no tenían texto; al corregirlas se debe escribir la solicitud. Los adjuntos antiguos que solo contenían metadatos pueden quitarse y enviar solo texto.
+- Se quitaron los comentarios del código Android, pruebas, configuración, scripts y prototipo HTML/CSS. Se conserva la directiva ejecutable `#!/bin/sh` y los avisos de licencia de Gradle están en `docs/gradle-wrapper-notice.txt`.
 
 ## Documentación
 
 - [Guía técnica actualizada](docs/Documentacion_Notix.md)
-- [Verificación y pruebas manuales](docs/validacion-29-octubre.md)
+- [Verificación y pruebas manuales actuales](docs/validacion-texto-rut.md)
 - [Contexto del caso](docs/contexto.md)
 - [Plan original de implementación](docs/Guia_implementacion_Notix.md), documento histórico
 

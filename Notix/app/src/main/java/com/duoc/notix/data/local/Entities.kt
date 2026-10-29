@@ -16,19 +16,19 @@ import com.duoc.notix.model.TipoFirma
 data class UsuarioEntity(
     @PrimaryKey val id: String,
     val tipoCuenta: TipoCuenta,
-    // Comunes (en Empresa son los datos del representante legal)
+
     val nombreCompleto: String,
     val correo: String,
     val contrasena: String,
-    val run: String,                  // limpio: "111111111"
-    val numeroDocumento: String,      // limpio: "123456789"
+    val run: String,
+    val numeroDocumento: String,
     val telefono: String,
-    val comuna: String,               // Persona: residencia · Empresa: domicilio comercial · Notario: comuna de la notaría
-    // Solo Empresa
+    val comuna: String,
+
     val razonSocialEmpresa: String? = null,
     val rutEmpresa: String? = null,
     val giroEmpresa: String? = null,
-    // Solo Notario
+
     val numeroNotaria: Int? = null
 )
 
@@ -49,7 +49,8 @@ data class TramiteEntity(
     val antecedentesComuna: String,
     val observacion: String? = null,
     val legibilidadConfirmada: Boolean = false,
-    @androidx.room.ColumnInfo(defaultValue = "0") val firmaConfirmada: Boolean = false
+    @androidx.room.ColumnInfo(defaultValue = "0") val firmaConfirmada: Boolean = false,
+    @androidx.room.ColumnInfo(defaultValue = "''") val textoSolicitud: String = ""
 )
 
 @Entity(

@@ -51,6 +51,16 @@ class CrearTramiteViewModel(
         private set
     var actuaEnNombreDe by mutableStateOf("")
         private set
+    var textoSolicitud by mutableStateOf("")
+        private set
+    var textoError by mutableStateOf<String?>(null)
+        private set
+
+    fun onTextoSolicitudChange(nuevo: String) {
+        textoSolicitud = nuevo
+        textoError = com.duoc.notix.data.validation.SolicitudValidator.validarTexto(nuevo)
+    }
+
     private var documento by mutableStateOf<Documento?>(null)
     private var original: Tramite? = null
     private var archivoNuevo = false
@@ -60,7 +70,6 @@ class CrearTramiteViewModel(
     var firmaConfirmada by mutableStateOf(false)
         private set
     fun onFirmaChange(valor: Boolean) { firmaConfirmada = valor }
-
 
     var nombreError by mutableStateOf<String?>(null)
         private set
@@ -85,6 +94,7 @@ class CrearTramiteViewModel(
                 original = repo.obtenerTramite(tramiteId)
                 require(original?.solicitanteId == usuario.id && original?.estado == EstadoTramite.DEVUELTO) { "Este trámite no está disponible para corregir." }
                 val t = requireNotNull(original)
+                textoSolicitud = t.textoSolicitud
                 nombreCompleto = t.antecedentes.nombreCompleto
                 run = t.antecedentes.documentoIdentidad
                 correo = t.antecedentes.correoContacto
@@ -149,12 +159,20 @@ class CrearTramiteViewModel(
         }
     }
 
+    fun quitarDocumento() {
+        if (importando || uiState.guardando) return
+        if (archivoNuevo) documento?.let(documentosLocales::borrar)
+        documento = null
+        archivoNuevo = false
+    }
+
     override fun onCleared() {
         if (archivoNuevo && !uiState.guardadoExitoso) documento?.let(documentosLocales::borrar)
         super.onCleared()
     }
 
     fun validarFormulario(): Boolean {
+        textoError = com.duoc.notix.data.validation.SolicitudValidator.validarTexto(textoSolicitud)
         val errNombre = if (nombreCompleto.trim().length < 3) "Ingresa el nombre completo" else null
         val errRun = RutValidator.validar(run, "RUN")
         val errCorreo = if (correo.isBlank()) "Ingresa el correo" else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(correo.trim()).matches()) "Correo inválido" else null
@@ -167,16 +185,15 @@ class CrearTramiteViewModel(
 
         val extra = when {
             importando -> "Espera a que termine de adjuntarse el archivo."
-            documento == null -> "Adjunta un documento ficticio antes de enviar."
             !firmaConfirmada -> "Confirma la firma simulada antes de enviar."
             else -> null
         }
         uiState = uiState.copy(errorGeneral = extra)
-        return errNombre == null && errRun == null && errCorreo == null && errComuna == null && extra == null
+        return errNombre == null && errRun == null && errCorreo == null && errComuna == null && textoError == null && extra == null
     }
 
     fun guardarTramite(onExito: () -> Unit) {
-        if (uiState.guardando || uiState.guardadoExitoso || uiState.cargandoUsuario) return // previene envíos duplicados
+        if (uiState.guardando || uiState.guardadoExitoso || uiState.cargandoUsuario) return
 
         if (!validarFormulario()) return
 
@@ -194,7 +211,8 @@ class CrearTramiteViewModel(
                     actuaEnNombreDe = actuaEnNombreDe.ifBlank { null },
                     tipoFirma = formato.firmaRequerida,
                     estado = EstadoTramite.ENVIADO,
-                    documentos = listOf(requireNotNull(documento)),
+                    documentos = listOfNotNull(documento),
+                    textoSolicitud = textoSolicitud.trim(),
                     firmaConfirmada = firmaConfirmada,
                     antecedentes = Antecedentes(
                         nombreCompleto = nombreCompleto.trim(),
@@ -213,7 +231,7 @@ class CrearTramiteViewModel(
 
                 if (tramiteId == null) repo.crearTramite(nuevoTramite, usuarioId)
                 else repo.reenviarTramite(nuevoTramite, usuarioId)
-                if (archivoNuevo) original?.documentos?.filter { it.rutaLocal != documento?.rutaLocal }?.forEach(documentosLocales::borrar)
+                original?.documentos?.filter { it.rutaLocal != documento?.rutaLocal }?.forEach(documentosLocales::borrar)
                 uiState = uiState.copy(guardando = false, guardadoExitoso = true)
                 onExito()
             } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {

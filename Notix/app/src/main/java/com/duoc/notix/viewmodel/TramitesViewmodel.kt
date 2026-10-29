@@ -27,11 +27,11 @@ data class MisTramitesUiState(
     val cargando: Boolean = true,
     val perfil: String = "",
     val nombre: String = "",
-    val tramites: List<Tramite> = emptyList(),   // ya filtrados y ordenados
+    val tramites: List<Tramite> = emptyList(),
     val enRevision: Int = 0,
     val observados: Int = 0,
     val finalizados: Int = 0,
-    val alerta: Tramite? = null,                 // trámite devuelto que requiere atención
+    val alerta: Tramite? = null,
     val filtro: FiltroTramites = FiltroTramites.TODOS,
     val avisosSinLeer: Boolean = false
 )

@@ -54,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -83,7 +84,6 @@ fun CrearTramiteScreen(
     val legibilidadConfirmada = vm.firmaConfirmada
     var mostrarModalConfirmacion by remember { mutableStateOf(false) }
 
-    // Selector nativo de archivos de Android
     val documentPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -125,7 +125,7 @@ fun CrearTramiteScreen(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Tarjeta del Formato Seleccionado
+
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = Color.White,
@@ -167,7 +167,21 @@ fun CrearTramiteScreen(
                 modifier = Modifier.padding(top = 8.dp)
             )
 
-            // Campo Nombre Completo
+            OutlinedTextField(
+                value = vm.textoSolicitud,
+                onValueChange = vm::onTextoSolicitudChange,
+                label = { Text("Texto de la solicitud") },
+                placeholder = { Text("Escribe qué solicitas y los antecedentes ficticios necesarios.") },
+                minLines = 5,
+                isError = vm.textoError != null,
+                supportingText = {
+                    Text(vm.textoError ?: "Obligatorio: entre 10 y 5000 caracteres. ${vm.textoSolicitud.trim().length}/5000")
+                },
+                shape = RoundedCornerShape(10.dp),
+                colors = notixTextFieldColors(),
+                modifier = Modifier.fillMaxWidth().testTag("texto_solicitud")
+            )
+
             OutlinedTextField(
                 value = vm.nombreCompleto,
                 onValueChange = vm::onNombreChange,
@@ -180,7 +194,6 @@ fun CrearTramiteScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Campo RUN / Documento
             OutlinedTextField(
                 value = vm.run,
                 onValueChange = vm::onRunChange,
@@ -194,7 +207,6 @@ fun CrearTramiteScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Campo Correo Electrónico
             OutlinedTextField(
                 value = vm.correo,
                 onValueChange = vm::onCorreoChange,
@@ -208,7 +220,6 @@ fun CrearTramiteScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Campo Comuna
             OutlinedTextField(
                 value = vm.comuna,
                 onValueChange = vm::onComunaChange,
@@ -221,7 +232,6 @@ fun CrearTramiteScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Si es empresa o si aplica actuación en representación
             if (vm.uiState.usuario?.tipoCuenta == TipoCuenta.EMPRESA || vm.actuaEnNombreDe.isNotBlank()) {
                 OutlinedTextField(
                     value = vm.actuaEnNombreDe,
@@ -234,9 +244,8 @@ fun CrearTramiteScreen(
                 )
             }
 
-            // Recurso Nativo Android: Adjuntar Documento
             Text(
-                "Documento ficticio adjunto (máximo 5 MB)",
+                "Documento de respaldo (opcional)",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = NotixColors.Tinta,
@@ -269,7 +278,7 @@ fun CrearTramiteScreen(
                             color = NotixColors.Tinta
                         )
                         Text(
-                            text = vm.documentoAdjuntoNombre ?: "PDF, TXT, PNG o JPEG ficticio; máximo 5 MB",
+                            text = vm.documentoAdjuntoNombre ?: "Puedes enviar solo el texto o agregar un PDF, TXT, PNG o JPEG ficticio de hasta 5 MB.",
                             fontSize = 12.sp,
                             color = if (vm.documentoAdjuntoNombre != null) NotixColors.Brand else NotixColors.Gris
                         )
@@ -284,7 +293,12 @@ fun CrearTramiteScreen(
                 }
             }
 
-            // Confirmación de legibilidad
+            if (vm.documentoAdjuntoNombre != null) {
+                TextButton(onClick = vm::quitarDocumento, enabled = !vm.uiState.guardando && !vm.importando) {
+                    Text("Quitar respaldo")
+                }
+            }
+
             Surface(
                 onClick = { vm.onFirmaChange(!legibilidadConfirmada) },
                 shape = RoundedCornerShape(12.dp),
@@ -327,7 +341,6 @@ fun CrearTramiteScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // Botón Continuar al Modal de Confirmación
             Button(
                 onClick = {
                     if (vm.validarFormulario()) {
@@ -357,7 +370,6 @@ fun CrearTramiteScreen(
         }
     }
 
-    // Modal de Confirmaciones previo al guardado (Requisito D)
     if (mostrarModalConfirmacion) {
         AlertDialog(
             onDismissRequest = { mostrarModalConfirmacion = false },
@@ -371,7 +383,7 @@ fun CrearTramiteScreen(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         "Revisa el resumen antes de enviar tu trámite definitivamente:",
                         fontSize = 13.sp,
@@ -384,6 +396,8 @@ fun CrearTramiteScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Texto de la solicitud:", fontWeight = FontWeight.Bold, color = NotixColors.Tinta)
+                            Text(vm.textoSolicitud, fontSize = 13.sp, color = NotixColors.Tinta)
                             Text("• Formato: ${formato.nombre}", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = NotixColors.Tinta)
                             Text("• Tipo de Firma: ${formato.firmaRequerida.etiqueta}", fontSize = 13.sp, color = NotixColors.Tinta)
                             Text("• Solicitante: ${vm.nombreCompleto}", fontSize = 13.sp, color = NotixColors.Tinta)
@@ -394,7 +408,7 @@ fun CrearTramiteScreen(
                                 Text("• En representación de: ${vm.actuaEnNombreDe}", fontSize = 13.sp, color = NotixColors.Tinta)
                             }
                             Text(
-                                "• Archivo adjunto: ${vm.documentoAdjuntoNombre ?: "Sin adjunto"}",
+                                "• Archivo adjunto: ${vm.documentoAdjuntoNombre ?: "Sin documento de respaldo"}",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = NotixColors.Brand

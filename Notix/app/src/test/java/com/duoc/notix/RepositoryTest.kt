@@ -28,6 +28,7 @@ class RepositoryTest {
         tipoFirma = TipoFirma.SIMPLE, estado = EstadoTramite.ENVIADO,
         documentos = listOf(Documento("ficticio.txt", 1, rutaLocal = "copia-ficticia", mime = "text/plain")),
         antecedentes = Antecedentes(persona.nombreCompleto, persona.run, persona.correo, persona.comuna),
+        textoSolicitud = "Solicito un poder simple de demostración con los antecedentes descritos.",
         firmaConfirmada = true, historial = listOf(EventoHistorial("Enviado", "29/10/2026 12:00", TipoCuenta.PERSONA)))
 
     @Before fun setup() = runBlocking {
@@ -109,11 +110,36 @@ class RepositoryTest {
         rechazado { repo.reenviarTramite(t, notario.id) }
         rechazado { repo.crearTramite(t.copy(id = "otro"), notario.id) }
     }
-    @Test fun formularioSinArchivoOFirmaNoCreaFilas() = runBlocking {
-        rechazado { repo.crearTramite(tramite().copy(documentos = emptyList()), persona.id) }
+    @Test fun formularioSinTextoOFirmaNoCreaFilas() = runBlocking {
+        rechazado { repo.crearTramite(tramite().copy(textoSolicitud = " "), persona.id) }
         rechazado { repo.crearTramite(tramite().copy(firmaConfirmada = false), persona.id) }
         assertTrue(repo.observarMisTramites(persona.id).first().isEmpty())
         assertTrue(repo.observarAvisos(persona.id).first().isEmpty())
+    }
+    @Test fun textoSinRespaldoSeGuardaYSePuedeCorregir() = runBlocking {
+        val t = tramite().copy(documentos = emptyList())
+        repo.crearTramite(t, persona.id)
+        val guardado = repo.obtenerTramite(t.id)!!
+        assertEquals(t.textoSolicitud, guardado.textoSolicitud)
+        assertTrue(guardado.documentos.isEmpty())
+        revisar(guardado, EstadoTramite.DEVUELTO, "Amplía los antecedentes ficticios.")
+        repo.reenviarTramite(guardado.copy(textoSolicitud = "Solicitud ficticia corregida con nuevos antecedentes."), persona.id)
+        val nuevo = repo.obtenerTramite(t.id)!!
+        assertEquals("Solicitud ficticia corregida con nuevos antecedentes.", nuevo.textoSolicitud)
+        assertTrue(nuevo.documentos.isEmpty())
+        assertEquals(EstadoTramite.ENVIADO, nuevo.estado)
+        revisar(nuevo, EstadoTramite.FINALIZADO)
+        assertEquals(EstadoTramite.FINALIZADO, repo.obtenerTramite(t.id)!!.estado)
+    }
+    @Test fun rechazaTextoDemasiadoCortoOLargoInclusoConDocumento() = runBlocking {
+        for (texto in listOf("", "   ", "corto", "x".repeat(5001))) {
+            rechazado { repo.crearTramite(tramite().copy(textoSolicitud = texto), persona.id) }
+        }
+        assertTrue(repo.observarMisTramites(persona.id).first().isEmpty())
+    }
+    @Test fun registroAceptaUnVerificadorSinModuloOnce() = runBlocking {
+        val r = auth.registrar(usuario("rut_ficticio").copy(run = "223124228"))
+        assertTrue(r is AuthResult.Success)
     }
     @Test fun idDuplicadoNoReemplazaHistorialNiDocumentos() = runBlocking {
         val t = tramite(); repo.crearTramite(t, persona.id)

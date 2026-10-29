@@ -51,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -307,7 +308,7 @@ private fun TramiteNotarioCard(
 
             Button(
                 onClick = onRevisar,
-                modifier = Modifier.fillMaxWidth().height(44.dp),
+                modifier = Modifier.fillMaxWidth().height(44.dp).testTag("revisar_${tramite.id}"),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = NotixColors.Brand)
             ) {
@@ -353,6 +354,8 @@ private fun RevisionTramiteDialog(
                     color = NotixColors.Tinta
                 )
 
+                Text("Texto de la solicitud:", fontWeight = FontWeight.Bold, color = NotixColors.Tinta)
+                Text(tramite.textoSolicitud.ifBlank { "Solicitud anterior sin texto registrado." }, fontSize = 14.sp, color = NotixColors.Tinta)
                 Text("Solicitante: ${tramite.antecedentes.nombreCompleto}", fontSize = 13.sp, color = NotixColors.Tinta)
                 Text("RUN: ${tramite.antecedentes.documentoIdentidad}", fontSize = 13.sp, color = NotixColors.Tinta)
                 Text("Correo: ${tramite.antecedentes.correoContacto}", fontSize = 13.sp, color = NotixColors.Tinta)
@@ -361,6 +364,7 @@ private fun RevisionTramiteDialog(
                     Text("En representación de: $it", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = NotixColors.Tinta)
                 }
 
+                if (tramite.documentos.isEmpty()) Text("Sin documento de respaldo", fontSize = 13.sp)
                 if (tramite.documentos.isNotEmpty()) {
                     Spacer(Modifier.height(4.dp))
                     Text("Documentos adjuntos:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = NotixColors.Tinta)
@@ -373,7 +377,7 @@ private fun RevisionTramiteDialog(
                 Text("Evaluación y firma notariales simuladas; sin validez legal.", fontSize = 12.sp)
                 if (editable) Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = legibilidad, onCheckedChange = { legibilidad = it })
-                    Text("Confirmo que revisé la legibilidad de los documentos ficticios.", fontSize = 12.sp)
+                    Text("Confirmo que revisé el texto y, si hay respaldos, su legibilidad.", fontSize = 12.sp)
                 }
                 if (!editable) Text("Este trámite ya fue evaluado. Una devolución requiere que el solicitante lo corrija y reenvíe.", fontSize = 12.sp)
                 if (modoDevolver) {

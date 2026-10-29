@@ -11,7 +11,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
 
-/** Copia privada: el permiso temporal del selector no se necesita al reiniciar la app. */
 class DocumentosLocales(private val context: Context) {
     companion object {
         const val MAX_BYTES = 5 * 1024 * 1024

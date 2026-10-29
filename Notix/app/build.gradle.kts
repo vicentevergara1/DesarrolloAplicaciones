@@ -68,7 +68,7 @@ tasks.withType<Test>().configureEach {
     systemProperty("user.home", testHome.absolutePath)
     doFirst { check(testHome.isDirectory || testHome.mkdirs()) }
     systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
-    // Permite que Robolectric use el proxy y el almacén de confianza del equipo.
+
     listOf("https.proxyHost", "https.proxyPort", "http.proxyHost", "http.proxyPort",
         "http.nonProxyHosts", "javax.net.ssl.trustStore").forEach { name ->
         System.getProperty(name)?.let { value -> systemProperty(name, value) }

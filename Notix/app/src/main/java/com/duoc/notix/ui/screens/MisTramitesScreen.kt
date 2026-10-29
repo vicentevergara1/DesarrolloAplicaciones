@@ -392,6 +392,8 @@ private fun DetalleClienteDialog(
                 }
 
                 Text("Firma: ${tramite.tipoFirma.etiqueta} (${if (tramite.firmaConfirmada) "simulada y confirmada" else "demostración anterior"})", fontSize = 13.sp)
+                Text("Texto de la solicitud:", fontWeight = FontWeight.Bold, color = NotixColors.Tinta)
+                Text(tramite.textoSolicitud.ifBlank { "Solicitud anterior sin texto registrado." }, fontSize = 14.sp, color = NotixColors.Tinta)
                 Text("Antecedentes del trámite:", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NotixColors.Tinta)
                 Text("• Solicitante: ${tramite.antecedentes.nombreCompleto}", fontSize = 13.sp, color = NotixColors.Tinta)
                 Text("• RUN: ${tramite.antecedentes.documentoIdentidad}", fontSize = 13.sp, color = NotixColors.Tinta)
@@ -401,6 +403,7 @@ private fun DetalleClienteDialog(
                     Text("• En representación de: $it", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = NotixColors.Tinta)
                 }
 
+                if (tramite.documentos.isEmpty()) Text("Sin documento de respaldo", fontSize = 13.sp)
                 Text("Documentos adjuntos:", fontWeight = FontWeight.Bold)
                 tramite.documentos.forEach { doc ->
                     androidx.compose.material3.TextButton(onClick = { errorDocumento = com.duoc.notix.data.local.abrirDocumento(context, doc) }) { Text(doc.nombre) }

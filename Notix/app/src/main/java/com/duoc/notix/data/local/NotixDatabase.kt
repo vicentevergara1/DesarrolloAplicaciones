@@ -14,7 +14,7 @@ import androidx.room.TypeConverters
         EventoHistorialEntity::class,
         AvisoEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(NotixTypeConverters::class)
@@ -33,6 +33,12 @@ abstract class NotixDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tramites ADD COLUMN textoSolicitud TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         @Volatile
         private var INSTANCE: NotixDatabase? = null
 
@@ -43,7 +49,7 @@ abstract class NotixDatabase : RoomDatabase() {
                     NotixDatabase::class.java,
                     "notix_database"
                 )
-                .addMigrations(MIGRATION_2_3)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                 .build()
                 INSTANCE = instance
                 instance

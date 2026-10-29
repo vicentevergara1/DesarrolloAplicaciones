@@ -46,7 +46,7 @@ class AuthRepository(private val usuarioDao: UsuarioDao) {
             ?: return@withContext AuthResult.Error("Correo, contraseña o perfil incorrectos.")
         if (u.tipoCuenta != tipo || !PasswordStorage.coincide(contrasena, u.contrasena))
             return@withContext AuthResult.Error("Correo, contraseña o perfil incorrectos.")
-        // Actualiza cuentas de la versión anterior después de comprobar su contraseña.
+
         if (!PasswordStorage.esHash(u.contrasena)) usuarioDao.actualizarClave(u.id, PasswordStorage.guardar(contrasena))
         AuthResult.Success(u.copy(contrasena = ""))
     }

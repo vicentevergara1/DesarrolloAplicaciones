@@ -70,10 +70,6 @@ private val MoradoFondo = Color(0xFFECE8FB)
 private val Tinta = Color(0xFF12302B)
 private val Gris = Color(0xFF5B726C)
 
-// ---------------------------------------------------------------------------
-// Definición de campos según el tipo de cuenta
-// ---------------------------------------------------------------------------
-
 private class CampoDef(
     val key: String,
     val titulo: String,
@@ -180,19 +176,6 @@ private fun camposPara(tipo: TipoCuenta): List<CampoDef> = when (tipo) {
     )
 }
 
-// ---------------------------------------------------------------------------
-// Pantalla
-// ---------------------------------------------------------------------------
-
-/**
- * Pantalla "Crear tu cuenta" (mapa de navegación: 1c y 1d).
- * Los campos cambian según el tipo de cuenta. Registrarse simula la creación
- * de la cuenta: no guarda ningún dato real.
- *
- * @param onVolver     flecha atrás -> Ingreso
- * @param onIngresar   "¿Ya tienes cuenta? Ingresar" -> Ingreso
- * @param onRegistrado Persona/Empresa -> Mis trámites, Notario -> Bandeja del notario
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CrearCuentaScreen(
@@ -226,7 +209,7 @@ fun CrearCuentaScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        // Encabezado
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -253,7 +236,7 @@ fun CrearCuentaScreen(
             fontFamily = FontFamily.Serif
         )
         Text("Simulación académica. Usa solo datos y contraseñas ficticios.", color = Gris, fontSize = 12.sp)
-        // Tipo de cuenta (arriba, porque define qué campos se piden)
+
         Text(
             "Tipo de cuenta",
             color = Tinta, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
@@ -280,7 +263,6 @@ fun CrearCuentaScreen(
             }
         }
 
-        // Campos propios del tipo de cuenta
         campos.forEach { c ->
             key(tipo, c.key) {
                 Campo(
@@ -298,7 +280,6 @@ fun CrearCuentaScreen(
             }
         }
 
-        // Contraseña (común a todos)
         Campo(
             titulo = "Contraseña",
             valor = pass, onCambio = { pass = it },
@@ -318,7 +299,6 @@ fun CrearCuentaScreen(
             onNext = { focus.clearFocus() }
         )
 
-        // Registrarse
         Button(
             enabled = !vm.cargando,
             onClick = {
@@ -372,8 +352,8 @@ fun CrearCuentaScreen(
                 Text("Ingresar", color = Brand, fontWeight = FontWeight.Bold)
             }
         }
-    }   // ← cierra el Column
-}       // ← cierra CrearCuentaScreen
+    }
+}
 
         @Composable
         private fun Campo(
